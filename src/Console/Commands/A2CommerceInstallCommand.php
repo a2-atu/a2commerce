@@ -30,6 +30,12 @@ class A2CommerceInstallCommand extends Command
             }
         }
 
+        $routes = $results['routes'] ?? [];
+        if ($routes !== []) {
+            $this->line(sprintf('Routes file: %s', $routes['path'] ?? 'routes/api.php'));
+            $this->line($routes['added'] ? 'Route block ensured.' : 'Route block already present.');
+        }
+
         $this->info('Done.');
 
         return self::SUCCESS;

@@ -29,6 +29,12 @@ class A2CommerceUpdateCommand extends Command
             }
         }
 
+        $routes = $results['routes'] ?? [];
+        if ($routes !== []) {
+            $this->line(sprintf('Routes file: %s', $routes['path'] ?? 'routes/api.php'));
+            $this->line($routes['added'] ? 'Route block ensured.' : 'Route block already present.');
+        }
+
         $this->info('Update complete.');
 
         return self::SUCCESS;

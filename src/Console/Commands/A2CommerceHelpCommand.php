@@ -31,6 +31,11 @@ class A2CommerceHelpCommand extends Command
         $this->line('  A2_CURRENCY=USD');
         $this->line('  A2_CURRENCY_SYMBOL="$"');
         $this->line('  A2_CURRENCY_CONVERSION_RATE=130');
+        $this->newLine();
+        $this->line('Routes appended to routes/api.php:');
+        $this->line('  Route::prefix(\'a2/payment\')->group(function () {');
+        $this->line('      Route::post(\'/paypal/webhook\', [\\App\\Http\\Controllers\\A2\\Commerce\\PaymentController::class, \'webhookPayPal\'])->name(\'api.payment.paypal.webhook\');');
+        $this->line('  });');
 
         return self::SUCCESS;
     }

@@ -20,6 +20,16 @@ class Installer
         'A2_CURRENCY_CONVERSION_RATE' => '130',
     ];
 
+    private const ROUTE_MARK_START = '// >>> A2Commerce Routes START';
+    private const ROUTE_MARK_END = '// >>> A2Commerce Routes END';
+    private const ROUTE_BLOCK = <<<'PHP'
+// >>> A2Commerce Routes START
+Route::prefix('a2/payment')->group(function () {
+    Route::post('/paypal/webhook', [\App\Http\Controllers\A2\Commerce\PaymentController::class, 'webhookPayPal'])->name('api.payment.paypal.webhook');
+});
+// >>> A2Commerce Routes END
+PHP;
+
     public function __construct(
         private readonly Filesystem $files,
         private readonly string $stubsPath,
@@ -30,14 +40,15 @@ class Installer
     /**
      * Install fresh assets and env keys.
      *
-     * @return array{copied: array, env: array}
+     * @return array{copied: array, env: array, routes: array}
      */
     public function install(bool $overwrite = true, bool $touchEnv = true): array
     {
         $copied = $this->copyStubs($overwrite);
         $envChanges = $touchEnv ? $this->ensureEnvKeys() : [];
+        $routes = $this->ensureRoutes();
 
-        return ['copied' => $copied, 'env' => $envChanges];
+        return ['copied' => $copied, 'env' => $envChanges, 'routes' => $routes];
     }
 
     /**
@@ -51,14 +62,15 @@ class Installer
     /**
      * Remove copied assets and env keys.
      *
-     * @return array{removed: array, env: array}
+     * @return array{removed: array, env: array, routes: array}
      */
     public function uninstall(bool $touchEnv = true): array
     {
         $removed = $this->removeStubTargets();
         $env = $touchEnv ? $this->removeEnvKeys() : [];
+        $routes = $this->removeRoutes();
 
-        return ['removed' => $removed, 'env' => $env];
+        return ['removed' => $removed, 'env' => $env, 'routes' => $routes];
     }
 
     private function copyStubs(bool $overwrite): array
@@ -68,6 +80,9 @@ class Installer
 
         foreach ($stubFiles as $file) {
             /** @var \SplFileInfo $file */
+            if (str_starts_with($file->getFilename(), '.')) {
+                continue;
+            }
             $relative = ltrim(Str::after($file->getPathname(), $this->stubsPath), '/\\');
             [$root, $subPath] = $this->splitRoot($relative);
             $target = $this->targetPath($root, $subPath);
@@ -221,6 +236,66 @@ class Installer
         }
 
         return $removed;
+    }
+
+    private function ensureRoutes(): array
+    {
+        $apiPath = $this->pathJoin($this->appBasePath, 'routes', 'api.php');
+        $updated = false;
+        $importAdded = false;
+
+        $contents = $this->files->exists($apiPath)
+            ? $this->files->get($apiPath)
+            : "<?php\n\nuse Illuminate\\Support\\Facades\\Route;\n\n";
+
+        if (!str_contains($contents, 'Illuminate\\Support\\Facades\\Route')) {
+            $contents = preg_replace('/<\\?php\\s*/', "<?php\n\nuse Illuminate\\Support\\Facades\\Route;\n", $contents, 1, $count);
+            if ($count === 0) {
+                $contents = "<?php\n\nuse Illuminate\\Support\\Facades\\Route;\n\n" . ltrim($contents, "<?php");
+            }
+            $importAdded = true;
+            $updated = true;
+        }
+
+        if (!str_contains($contents, self::ROUTE_MARK_START)) {
+            $contents = rtrim($contents) . "\n\n" . self::ROUTE_BLOCK . "\n";
+            $updated = true;
+        }
+
+        if ($updated) {
+            $this->files->ensureDirectoryExists(dirname($apiPath));
+            $this->files->put($apiPath, $contents);
+        }
+
+        return [
+            'path' => $apiPath,
+            'added' => $updated,
+            'import_added' => $importAdded,
+        ];
+    }
+
+    private function removeRoutes(): array
+    {
+        $apiPath = $this->pathJoin($this->appBasePath, 'routes', 'api.php');
+        if (!$this->files->exists($apiPath)) {
+            return ['path' => $apiPath, 'removed' => false];
+        }
+
+        $contents = $this->files->get($apiPath);
+        $pattern = sprintf(
+            '#\\n?%s.*?%s\\s*\\n?#s',
+            preg_quote(self::ROUTE_MARK_START, '#'),
+            preg_quote(self::ROUTE_MARK_END, '#')
+        );
+
+        $updated = preg_replace($pattern, "\n", $contents, 1, $count);
+
+        if ($count > 0) {
+            $normalized = preg_replace("/[\r\n]{3,}/", "\n\n", $updated ?? '');
+            $this->files->put($apiPath, rtrim($normalized) . "\n");
+        }
+
+        return ['path' => $apiPath, 'removed' => $count > 0];
     }
 
     private function stripEnvKeys(string $content, ?array &$removedKeys = []): string

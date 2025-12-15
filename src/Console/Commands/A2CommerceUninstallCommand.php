@@ -30,6 +30,12 @@ class A2CommerceUninstallCommand extends Command
             }
         }
 
+        $routes = $results['routes'] ?? [];
+        if ($routes !== []) {
+            $this->line(sprintf('Routes file: %s', $routes['path'] ?? 'routes/api.php'));
+            $this->line($routes['removed'] ? 'Route block removed.' : 'No route block to remove.');
+        }
+
         $this->info('Uninstall complete.');
 
         return self::SUCCESS;
