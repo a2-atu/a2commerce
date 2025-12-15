@@ -116,9 +116,26 @@ PHP;
 
     private function targetPath(string $root, string $subPath): ?string
     {
+        $root = trim($root, '/\\');
+
+        $applicationRoots = [
+            'app' => '',
+            'controllers' => 'Http/Controllers',
+            'models' => 'Models',
+            'services' => 'Services',
+            'notifications' => 'Notifications',
+            'listeners' => 'Listeners',
+            'jobs' => 'Jobs',
+            'events' => 'Events',
+        ];
+
+        if (array_key_exists($root, $applicationRoots)) {
+            return $this->appPathWithPrefix($applicationRoots[$root], $subPath);
+        }
+
         return match ($root) {
-            'app' => $this->appPath($subPath),
             'config' => $this->pathJoin($this->appBasePath, 'config', $subPath),
+            'migrations' => $this->pathJoin($this->appBasePath, 'database', 'migrations', $subPath),
             'database' => $this->pathJoin($this->appBasePath, 'database', $subPath),
             'resources' => $this->pathJoin($this->appBasePath, 'resources', $subPath),
             default => null,
@@ -127,12 +144,38 @@ PHP;
 
     private function appPath(string $relative): string
     {
+        return $this->appPathWithPrefix('', $relative);
+    }
+
+    private function appPathWithPrefix(string $prefix, string $relative): string
+    {
+        $relative = $this->normalizeAppRelative($relative);
+        $segments = [$this->appBasePath, 'app'];
+
+        if ($prefix !== '') {
+            $segments[] = trim($prefix, '/\\');
+        }
+
+        if ($relative !== '') {
+            $segments[] = $relative;
+        }
+
+        return $this->pathJoin(...$segments);
+    }
+
+    private function normalizeAppRelative(string $relative): string
+    {
+        $relative = ltrim($relative, '/\\');
+        if ($relative === '') {
+            return '';
+        }
+
         $parts = explode('/', $relative);
         if (isset($parts[0]) && $parts[0] !== '') {
             $parts[0] = Str::studly($parts[0]);
         }
 
-        return $this->pathJoin($this->appBasePath, 'app', implode('/', $parts));
+        return implode('/', $parts);
     }
 
     private function pathJoin(string ...$parts): string
@@ -358,9 +401,26 @@ PHP;
 
     private function rootPathFor(string $root): ?string
     {
+        $root = trim($root, '/\\');
+
+        $applicationRoots = [
+            'app' => '',
+            'controllers' => 'Http/Controllers',
+            'models' => 'Models',
+            'services' => 'Services',
+            'notifications' => 'Notifications',
+            'listeners' => 'Listeners',
+            'jobs' => 'Jobs',
+            'events' => 'Events',
+        ];
+
+        if (array_key_exists($root, $applicationRoots)) {
+            return $this->pathJoin($this->appBasePath, 'app', $applicationRoots[$root]);
+        }
+
         return match ($root) {
-            'app' => $this->pathJoin($this->appBasePath, 'app'),
             'config' => $this->pathJoin($this->appBasePath, 'config'),
+            'migrations' => $this->pathJoin($this->appBasePath, 'database', 'migrations'),
             'database' => $this->pathJoin($this->appBasePath, 'database'),
             'resources' => $this->pathJoin($this->appBasePath, 'resources'),
             default => null,

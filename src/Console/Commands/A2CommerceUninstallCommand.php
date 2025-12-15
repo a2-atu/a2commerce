@@ -2,6 +2,7 @@
 
 namespace A2\A2Commerce\Console\Commands;
 
+use A2\A2Commerce\A2Commerce;
 use A2\A2Commerce\Support\Installer;
 use Illuminate\Console\Command;
 
@@ -13,6 +14,7 @@ class A2CommerceUninstallCommand extends Command
 
     public function handle(Installer $installer): int
     {
+        $this->line('A2Commerce version: ' . A2Commerce::VERSION);
         if (!$this->option('force') && !$this->confirm('This will delete A2Commerce files. Continue?')) {
             $this->warn('Uninstall aborted.');
             return self::SUCCESS;

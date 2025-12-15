@@ -2,6 +2,7 @@
 
 namespace A2\A2Commerce\Console\Commands;
 
+use A2\A2Commerce\A2Commerce;
 use A2\A2Commerce\Support\Installer;
 use Illuminate\Console\Command;
 
@@ -16,6 +17,7 @@ class A2CommerceUpdateCommand extends Command
         $touchEnv = !$this->option('skip-env');
         $results = $installer->update($touchEnv);
 
+        $this->line('A2Commerce version: ' . A2Commerce::VERSION);
         $this->info('A2Commerce assets refreshed: ' . count($results['copied']['copied']));
         if ($results['copied']['skipped'] !== []) {
             $this->warn('Skipped existing files: ' . count($results['copied']['skipped']));

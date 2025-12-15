@@ -2,12 +2,13 @@
 
 namespace A2\A2Commerce;
 
+use A2\A2Commerce\A2Commerce;
 use A2\A2Commerce\Console\Commands\A2CommerceHelpCommand;
 use A2\A2Commerce\Console\Commands\A2CommerceInstallCommand;
 use A2\A2Commerce\Console\Commands\A2CommerceUninstallCommand;
 use A2\A2Commerce\Console\Commands\A2CommerceUpdateCommand;
 use A2\A2Commerce\Support\Installer;
-use Illuminate\Contracts\Container\Container;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\ServiceProvider;
 
@@ -15,7 +16,9 @@ class A2CommerceServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->singleton(Installer::class, function (Container $app) {
+        $this->app->instance('a2commerce.version', A2Commerce::VERSION);
+
+        $this->app->singleton(Installer::class, function (Application $app) {
             return new Installer(
                 new Filesystem(),
                 A2Commerce::stubsPath(),
@@ -36,4 +39,3 @@ class A2CommerceServiceProvider extends ServiceProvider
         }
     }
 }
-

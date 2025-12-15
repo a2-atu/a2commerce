@@ -2,6 +2,7 @@
 
 namespace A2\A2Commerce\Console\Commands;
 
+use A2\A2Commerce\A2Commerce;
 use Illuminate\Console\Command;
 
 class A2CommerceHelpCommand extends Command
@@ -12,6 +13,8 @@ class A2CommerceHelpCommand extends Command
 
     public function handle(): int
     {
+        $this->line('A2Commerce version: ' . A2Commerce::VERSION);
+        $this->newLine();
         $this->line('A2Commerce commands:');
         $this->line('  a2commerce:install    Install stubs and add env keys');
         $this->line('  a2commerce:update     Refresh stubs and ensure env keys');
