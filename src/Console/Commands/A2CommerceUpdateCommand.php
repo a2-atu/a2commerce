@@ -33,63 +33,25 @@ class A2CommerceUpdateCommand extends Command
         $this->step('Creating backup of existing files...');
         $this->createBackup();
         
-        // Step 2: Remove old files
-        $this->step('Removing old A2Commerce files...');
-        $this->removeOldFiles();
+        // Step 2: Use Installer's update method to refresh files
+        // This ensures files are removed and copied using the same path mapping
+        $this->step('Refreshing A2Commerce files and stubs...');
+        $results = $installer->update($touchEnv);
         
-        // Step 3: Copy fresh Services
-        $this->step('Copying Services...');
-        $this->copyDirectory('services', app_path('Services'));
+        // Show detailed output
+        $this->displayUpdateResults($results['copied'] ?? []);
         
-        // Step 4: Copy fresh Controllers
-        $this->step('Copying Controllers...');
-        $this->copyDirectory('controllers', app_path('Http/Controllers'));
-        
-        // Step 5: Copy fresh Models
-        $this->step('Copying Models...');
-        $this->copyDirectory('models', app_path('Models'));
-        
-        // Step 6: Copy fresh Events
-        $this->step('Copying Events...');
-        $this->copyDirectory('events', app_path('Events'));
-        
-        // Step 7: Copy fresh Listeners
-        $this->step('Copying Listeners...');
-        $this->copyDirectory('listeners', app_path('Listeners'));
-        
-        // Step 8: Copy fresh Jobs
-        $this->step('Copying Jobs...');
-        $this->copyDirectory('jobs', app_path('Jobs'));
-        
-        // Step 9: Copy fresh Notifications
-        $this->step('Copying Notifications...');
-        $this->copyDirectory('notifications', app_path('Notifications'));
-        
-        // Step 10: Copy fresh Migrations
-        $this->step('Copying Migrations...');
-        $this->copyDirectory('migrations', database_path('migrations'));
-        
-        // Step 11: Copy fresh Config
-        $this->step('Copying Configuration...');
-        $this->copyDirectory('config', config_path());
-        
-        // Step 12: Copy fresh Views
-        $this->step('Copying Views...');
-        $this->copyDirectory('resources', resource_path());
-        
-        // Step 13: Environment variables
+        // Step 3: Environment variables
         $this->step('Checking environment files...');
         if (!$touchEnv) {
             $this->line('   ⏭️  Environment keys skipped (--skip-env flag used).');
         } else {
-            $envResults = $installer->ensureEnvKeys();
-            $this->handleEnvResults($envResults);
+            $this->handleEnvResults($results['env'] ?? []);
         }
         
-        // Step 14: Routes
+        // Step 4: Routes
         $this->step('Verifying API routes...');
-        $routes = $installer->ensureRoutes();
-        $this->handleRoutes($routes);
+        $this->handleRoutes($results['routes'] ?? []);
         
         // Step 15: Clear caches
         $this->step('Clearing application caches...');
@@ -101,87 +63,36 @@ class A2CommerceUpdateCommand extends Command
     }
     
     /**
-     * Copy a directory from stubs to destination
+     * Display update results grouped by directory
      */
-    private function copyDirectory(string $stubDir, string $destination): void
+    private function displayUpdateResults(array $copyResults): void
     {
-        $stubsPath = A2Commerce::stubsPath($stubDir);
-        
-        if (!File::exists($stubsPath)) {
-            $this->line("   ⚠️  Source directory not found: {$stubDir}");
+        $copied = $copyResults['copied'] ?? [];
+        $skipped = $copyResults['skipped'] ?? [];
+
+        if (empty($copied) && empty($skipped)) {
+            $this->line('   ℹ️  No files to update');
             return;
         }
-        
-        if (!File::isDirectory($stubsPath)) {
-            $this->line("   ⚠️  Source is not a directory: {$stubDir}");
-            return;
-        }
-        
-        $files = File::allFiles($stubsPath);
-        $copied = 0;
-        
-        foreach ($files as $file) {
-            if (str_starts_with($file->getFilename(), '.')) {
-                continue;
+
+        // Group files by directory for better output
+        $byDirectory = [];
+        foreach ($copied as $file) {
+            $dir = dirname($file);
+            if (!isset($byDirectory[$dir])) {
+                $byDirectory[$dir] = [];
             }
-            
-            $relativePath = ltrim(str_replace($stubsPath, '', $file->getPathname()), '/\\');
-            $targetPath = rtrim($destination, '/\\') . '/' . $relativePath;
-            
-            File::ensureDirectoryExists(dirname($targetPath));
-            File::copy($file->getPathname(), $targetPath);
-            $copied++;
+            $byDirectory[$dir][] = basename($file);
         }
-        
-        if ($copied > 0) {
-            $this->info("   ✅ {$copied} file(s) copied to " . $this->getRelativePath($destination));
-        } else {
-            $this->line("   ℹ️  No files to copy");
+
+        foreach ($byDirectory as $dir => $files) {
+            $relativeDir = $this->getRelativePath($dir);
+            $this->info("   ✅ Refreshed " . count($files) . " file(s) in {$relativeDir}/");
         }
-    }
-    
-    /**
-     * Remove old A2Commerce files
-     */
-    private function removeOldFiles(): void
-    {
-        $directoriesToRemove = [
-            app_path('Services/A2'),
-            app_path('Http/Controllers/A2'),
-            app_path('Models/A2'),
-            app_path('Events/A2'),
-            app_path('Listeners/A2'),
-            app_path('Jobs/A2'),
-            app_path('Notifications/A2'),
-            resource_path('views/emails/a2'),
-        ];
-        
-        foreach ($directoriesToRemove as $directory) {
-            if (File::exists($directory)) {
-                File::deleteDirectory($directory);
-                $this->line("   ✅ Removed: " . $this->getRelativePath($directory));
-            }
+
+        if (!empty($skipped)) {
+            $this->warn("   ⚠️  " . count($skipped) . " file(s) skipped (files don't exist or couldn't be overwritten)");
         }
-        
-        // Remove old migration files
-        $migrationPath = database_path('migrations');
-        if (File::isDirectory($migrationPath)) {
-            foreach (File::files($migrationPath) as $file) {
-                if (str_contains($file->getFilename(), 'a2_ec_')) {
-                    File::delete($file->getPathname());
-                    $this->line("   ✅ Removed migration: " . $file->getFilename());
-                }
-            }
-        }
-        
-        // Remove config file
-        $configPath = config_path('a2_commerce.php');
-        if (File::exists($configPath)) {
-            File::delete($configPath);
-            $this->line("   ✅ Removed config: " . $this->getRelativePath($configPath));
-        }
-        
-        $this->info('   ✅ Old files removed successfully.');
     }
     
     /**
@@ -239,15 +150,23 @@ class A2CommerceUpdateCommand extends Command
     private function handleEnvResults(array $envResults): void
     {
         $envUpdated = false;
+        $filesChecked = [];
+        
         foreach ($envResults as $file => $keys) {
+            $filesChecked[] = basename($file);
+            
             if ($keys !== []) {
                 $this->info("   ✅ Added to " . basename($file) . ": " . implode(', ', $keys));
                 $envUpdated = true;
+            } else {
+                $this->line("   ℹ️  " . basename($file) . " already contains A2Commerce keys");
             }
         }
-        
-        if (!$envUpdated) {
-            $this->info('   ✅ Environment files already contain all A2Commerce keys.');
+
+        if (empty($filesChecked)) {
+            $this->warn('   ⚠️  No .env or .env.example files found. Environment keys were not added.');
+        } elseif (!$envUpdated) {
+            $this->info('   ✅ All environment files already contain A2Commerce keys.');
         }
     }
     

@@ -20,59 +20,58 @@ class A2CommerceInstallCommand extends Command
         $overwrite = !$this->option('no-overwrite');
         $touchEnv = !$this->option('skip-env');
 
-        // Step 1: Copy services
-        $this->step('Copying Services...');
-        $this->copyDirectory('services', app_path('Services'));
+        // Use Installer's install method to ensure files are tracked correctly for uninstall
+        // This ensures the same path mapping is used for install and uninstall
+        $this->step('Copying A2Commerce files and stubs...');
+        $results = $installer->install($overwrite, $touchEnv);
 
-        // Step 2: Copy controllers
-        $this->step('Copying Controllers...');
-        $this->copyDirectory('controllers', app_path('Http/Controllers'));
+        // Show detailed output grouped by directory
+        $this->displayCopyResults($results['copied']);
 
-        // Step 3: Copy models
-        $this->step('Copying Models...');
-        $this->copyDirectory('models', app_path('Models'));
-
-        // Step 4: Copy events
-        $this->step('Copying Events...');
-        $this->copyDirectory('events', app_path('Events'));
-
-        // Step 5: Copy listeners
-        $this->step('Copying Listeners...');
-        $this->copyDirectory('listeners', app_path('Listeners'));
-
-        // Step 6: Copy jobs
-        $this->step('Copying Jobs...');
-        $this->copyDirectory('jobs', app_path('Jobs'));
-
-        // Step 7: Copy notifications
-        $this->step('Copying Notifications...');
-        $this->copyDirectory('notifications', app_path('Notifications'));
-
-        // Step 8: Copy migrations
-        $this->step('Copying Migrations...');
-        $this->copyDirectory('migrations', database_path('migrations'));
-
-        // Step 9: Copy config
-        $this->step('Copying Configuration...');
-        $this->copyDirectory('config', config_path());
-
-        // Step 10: Copy resources/views
-        $this->step('Copying Views...');
-        $this->copyDirectory('resources', resource_path());
-
-        // Step 11: Environment variables
+        // Step 2: Environment variables
         $this->step('Updating environment files...');
-        $envResults = $touchEnv ? $installer->ensureEnvKeys() : [];
-        $this->handleEnvResults($envResults, $touchEnv);
+        $this->handleEnvResults($results['env'] ?? [], $touchEnv);
 
-        // Step 12: Routes
+        // Step 3: Routes
         $this->step('Ensuring API routes...');
-        $routes = $installer->ensureRoutes();
-        $this->handleRoutes($routes);
+        $this->handleRoutes($results['routes'] ?? []);
 
         $this->displayCompletionMessage($touchEnv);
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Display copy results grouped by directory
+     */
+    private function displayCopyResults(array $copyResults): void
+    {
+        $copied = $copyResults['copied'] ?? [];
+        $skipped = $copyResults['skipped'] ?? [];
+
+        if (empty($copied) && empty($skipped)) {
+            $this->line('   ℹ️  No files to copy');
+            return;
+        }
+
+        // Group files by directory for better output
+        $byDirectory = [];
+        foreach ($copied as $file) {
+            $dir = dirname($file);
+            if (!isset($byDirectory[$dir])) {
+                $byDirectory[$dir] = [];
+            }
+            $byDirectory[$dir][] = basename($file);
+        }
+
+        foreach ($byDirectory as $dir => $files) {
+            $relativeDir = $this->getRelativePath($dir);
+            $this->info("   ✅ Copied " . count($files) . " file(s) to {$relativeDir}/");
+        }
+
+        if (!empty($skipped)) {
+            $this->warn("   ⚠️  " . count($skipped) . " existing file(s) skipped (use --no-overwrite to keep existing files)");
+        }
     }
 
     /**
@@ -151,15 +150,25 @@ class A2CommerceInstallCommand extends Command
         }
 
         $envUpdated = false;
+        $filesChecked = [];
+
         foreach ($envResults as $file => $keys) {
+            $filesChecked[] = basename($file);
+
             if ($keys !== []) {
                 $this->info("   ✅ Added to " . basename($file) . ": " . implode(', ', $keys));
                 $envUpdated = true;
+            } else {
+                // File exists but no keys were added (they already exist)
+                $this->line("   ℹ️  " . basename($file) . " already contains A2Commerce keys");
             }
         }
 
-        if (!$envUpdated) {
-            $this->info('   ✅ Environment files already contain A2Commerce keys.');
+        if (empty($filesChecked)) {
+            $this->warn('   ⚠️  No .env or .env.example files found. Environment keys were not added.');
+            $this->line('   Create .env and .env.example files if you want A2Commerce to add environment variables automatically.');
+        } elseif (!$envUpdated) {
+            $this->info('   ✅ All environment files already contain A2Commerce keys.');
         }
     }
 

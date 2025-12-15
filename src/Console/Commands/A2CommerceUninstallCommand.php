@@ -59,11 +59,17 @@ class A2CommerceUninstallCommand extends Command
         $touchEnv = ! $keepEnv;
         $results = $installer->uninstall($touchEnv);
 
-        $removedCount = count($results['removed'] ?? []);
+        $removedFiles = $results['removed'] ?? [];
+        $removedCount = count($removedFiles);
+
         if ($removedCount > 0) {
-            $this->info("   ✅ {$removedCount} installed file(s) removed.");
+            foreach ($removedFiles as $file) {
+                $this->line("   ✅ Removed: " . $this->getRelativePath($file));
+            }
+            $this->info("   ✅ {$removedCount} installed file(s) removed successfully.");
         } else {
-            $this->info('   ✅ No installed files found to remove (files may have been manually deleted).');
+            $this->warn('   ⚠️  No installed files found to remove.');
+            $this->line('   This could mean files were already deleted or the package was never installed.');
         }
 
         // Step 3: Environment variables
@@ -163,14 +169,22 @@ class A2CommerceUninstallCommand extends Command
     private function handleEnvResults(array $envResults): void
     {
         $envCleaned = false;
+        $filesChecked = [];
+
         foreach ($envResults as $file => $keys) {
+            $filesChecked[] = basename($file);
+
             if ($keys !== []) {
                 $this->info("   ✅ Removed from " . basename($file) . ": " . implode(', ', $keys));
                 $envCleaned = true;
+            } else {
+                $this->line("   ℹ️  " . basename($file) . " does not contain A2Commerce keys");
             }
         }
 
-        if (!$envCleaned) {
+        if (empty($filesChecked)) {
+            $this->warn('   ⚠️  No .env or .env.example files found.');
+        } elseif (!$envCleaned) {
             $this->info('   ✅ No A2Commerce environment keys found to remove.');
         }
     }

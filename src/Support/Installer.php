@@ -353,32 +353,29 @@ PHP;
         $remaining = [];
 
         foreach ($lines as $line) {
-            if (str_starts_with($line, '# A2 CONFIGURATION')) {
-                // Drop the comment; only keep if something remains below.
+            // Skip the A2 CONFIGURATION comment line
+            if (str_contains($line, '# A2 CONFIGURATION')) {
                 continue;
             }
 
+            // Check if this line contains an A2 env key
             if (str_contains($line, '=')) {
                 [$key] = explode('=', $line, 2);
+                $key = trim($key);
+                
                 if (array_key_exists($key, self::ENV_KEYS)) {
                     $removedKeys[] = $key;
-                    continue;
+                    continue; // Skip this line
                 }
             }
 
             $remaining[] = $line;
         }
 
-        // Normalize extra blank lines.
-        $normalized = [];
-        foreach ($remaining as $line) {
-            if ($line === '' && ($normalized === [] || end($normalized) === '')) {
-                continue;
-            }
-            $normalized[] = $line;
-        }
-
-        return $normalized === [] ? '' : implode(PHP_EOL, $normalized) . PHP_EOL;
+        // Normalize extra blank lines (remove 3+ consecutive newlines)
+        $normalized = preg_replace("/[\r\n]{3,}/", "\n\n", implode(PHP_EOL, $remaining));
+        
+        return rtrim($normalized) . PHP_EOL;
     }
 
     private function removeStubTargets(): array
@@ -460,3 +457,4 @@ PHP;
         }
     }
 }
+
