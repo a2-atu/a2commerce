@@ -1,7 +1,7 @@
 {
     "name": "a2-atu/a2commerce",
     "description": "A2 Commerce - A2 is a platform for managing your business. A2 Commerce is a package for Laravel that provides helpful tools for your e-commerce website.",
-    "keywords": ["laravel", "php", "commerce", "a2", "a2commerce"],
+    "keywords": ["laravel", "php", "commerce", "a2", "a2commerce","vormia"],
     "type": "library",
     "license": "MIT",
     "require": {
