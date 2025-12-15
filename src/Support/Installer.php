@@ -253,7 +253,7 @@ PHP;
         return $keys;
     }
 
-    private function removeEnvKeys(): array
+    public function removeEnvKeys(): array
     {
         $paths = [
             $this->pathJoin($this->appBasePath, '.env'),
@@ -317,7 +317,7 @@ PHP;
         ];
     }
 
-    private function removeRoutes(): array
+    public function removeRoutes(): array
     {
         $apiPath = $this->pathJoin($this->appBasePath, 'routes', 'api.php');
         if (!$this->files->exists($apiPath)) {
