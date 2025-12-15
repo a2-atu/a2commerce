@@ -16,14 +16,14 @@ class A2CommerceUninstallCommand extends Command
     public function handle(Installer $installer): int
     {
         $this->displayHeader();
-        
+
         $force = $this->option('force');
         $keepEnv = $this->option('keep-env');
-        
+
         // Warning message
         $this->error('⚠️  DANGER: This will remove A2Commerce from your application!');
         $this->warn('   This action will:');
-        $this->warn('   • Remove all A2Commerce copied files and stubs');
+        $this->warn('   • Remove all A2Commerce copied files and stubs (only files originally installed by the package)');
         $this->warn('   • Remove PayPal webhook route from routes/api.php');
         if (!$keepEnv) {
             $this->warn('   • Remove A2Commerce environment variables from .env and .env.example');
@@ -33,12 +33,12 @@ class A2CommerceUninstallCommand extends Command
         $this->warn('   • Note: Database tables and migrations are NOT removed');
         $this->warn('   • Note: Composer packages are NOT uninstalled');
         $this->newLine();
-        
+
         if (!$force && !$this->confirm('Are you absolutely sure you want to uninstall A2Commerce?', false)) {
             $this->info('❌ Uninstall cancelled.');
             return self::SUCCESS;
         }
-        
+
         // Final confirmation
         if (!$force) {
             $this->newLine();
@@ -48,75 +48,45 @@ class A2CommerceUninstallCommand extends Command
                 return self::SUCCESS;
             }
         }
-        
-        // Step 1: Create backup
+
+        // Step 1: Create backup of existing A2Commerce-related files
         $this->step('Creating final backup...');
         $this->createFinalBackup();
-        
-        // Step 2: Remove Services
-        $this->step('Removing Services...');
-        $this->removeDirectory(app_path('Services/A2'));
-        
-        // Step 3: Remove Controllers
-        $this->step('Removing Controllers...');
-        $this->removeDirectory(app_path('Http/Controllers/A2'));
-        
-        // Step 4: Remove Models
-        $this->step('Removing Models...');
-        $this->removeDirectory(app_path('Models/A2'));
-        
-        // Step 5: Remove Events
-        $this->step('Removing Events...');
-        $this->removeDirectory(app_path('Events/A2'));
-        
-        // Step 6: Remove Listeners
-        $this->step('Removing Listeners...');
-        $this->removeDirectory(app_path('Listeners/A2'));
-        
-        // Step 7: Remove Jobs
-        $this->step('Removing Jobs...');
-        $this->removeDirectory(app_path('Jobs/A2'));
-        
-        // Step 8: Remove Notifications
-        $this->step('Removing Notifications...');
-        $this->removeDirectory(app_path('Notifications/A2'));
-        
-        // Step 9: Remove Migrations
-        $this->step('Removing Migrations...');
-        $this->removeMigrations();
-        
-        // Step 10: Remove Config
-        $this->step('Removing Configuration...');
-        $this->removeFile(config_path('a2_commerce.php'));
-        
-        // Step 11: Remove Views
-        $this->step('Removing Views...');
-        $this->removeDirectory(resource_path('views/emails/a2'));
-        
-        // Step 12: Environment variables
+
+        // Step 2: Let the Installer remove only files that were installed from stubs
+        // This ensures we only touch A2/Commerce files and never wipe other A2 namespaces (e.g., A2/Sacco).
+        $this->step('Removing A2Commerce files and stubs (file-by-file)...');
+        $touchEnv = ! $keepEnv;
+        $results = $installer->uninstall($touchEnv);
+
+        $removedCount = count($results['removed'] ?? []);
+        if ($removedCount > 0) {
+            $this->info("   ✅ {$removedCount} installed file(s) removed.");
+        } else {
+            $this->info('   ✅ No installed files found to remove (files may have been manually deleted).');
+        }
+
+        // Step 3: Environment variables
         $this->step('Cleaning up environment files...');
-        $touchEnv = !$keepEnv;
         if ($keepEnv) {
             $this->line('   ⏭️  Environment keys preserved (--keep-env flag used).');
         } else {
-            $envResults = $installer->removeEnvKeys();
-            $this->handleEnvResults($envResults);
+            $this->handleEnvResults($results['env'] ?? []);
         }
-        
-        // Step 13: Routes
+
+        // Step 4: Routes
         $this->step('Removing API routes...');
-        $routes = $installer->removeRoutes();
-        $this->handleRoutes($routes);
-        
-        // Step 14: Clear caches
+        $this->handleRoutes($results['routes'] ?? []);
+
+        // Step 5: Clear caches
         $this->step('Clearing application caches...');
         $this->clearCaches();
-        
+
         $this->displayCompletionMessage($keepEnv);
-        
+
         return self::SUCCESS;
     }
-    
+
     /**
      * Remove a directory
      */
@@ -126,7 +96,7 @@ class A2CommerceUninstallCommand extends Command
             $this->line("   ℹ️  Directory does not exist: " . $this->getRelativePath($path));
             return;
         }
-        
+
         if (File::isDirectory($path)) {
             File::deleteDirectory($path);
             $this->info("   ✅ Removed directory: " . $this->getRelativePath($path));
@@ -135,7 +105,7 @@ class A2CommerceUninstallCommand extends Command
             $this->info("   ✅ Removed file: " . $this->getRelativePath($path));
         }
     }
-    
+
     /**
      * Remove a file
      */
@@ -145,11 +115,11 @@ class A2CommerceUninstallCommand extends Command
             $this->line("   ℹ️  File does not exist: " . $this->getRelativePath($path));
             return;
         }
-        
+
         File::delete($path);
         $this->info("   ✅ Removed file: " . $this->getRelativePath($path));
     }
-    
+
     /**
      * Remove migration files
      */
@@ -160,7 +130,7 @@ class A2CommerceUninstallCommand extends Command
             $this->line("   ℹ️  Migrations directory does not exist");
             return;
         }
-        
+
         $removed = 0;
         foreach (File::files($migrationPath) as $file) {
             if (str_contains($file->getFilename(), 'a2_ec_')) {
@@ -169,12 +139,12 @@ class A2CommerceUninstallCommand extends Command
                 $removed++;
             }
         }
-        
+
         if ($removed === 0) {
             $this->line("   ℹ️  No A2Commerce migrations found to remove");
         }
     }
-    
+
     /**
      * Get relative path from base path for display
      */
@@ -186,7 +156,7 @@ class A2CommerceUninstallCommand extends Command
         }
         return $absolutePath;
     }
-    
+
     /**
      * Handle environment file results
      */
@@ -199,12 +169,12 @@ class A2CommerceUninstallCommand extends Command
                 $envCleaned = true;
             }
         }
-        
+
         if (!$envCleaned) {
             $this->info('   ✅ No A2Commerce environment keys found to remove.');
         }
     }
-    
+
     /**
      * Handle routes results
      */
@@ -218,7 +188,7 @@ class A2CommerceUninstallCommand extends Command
             }
         }
     }
-    
+
     /**
      * Clear application caches
      */
@@ -230,7 +200,7 @@ class A2CommerceUninstallCommand extends Command
             'view:clear' => 'View cache',
             'cache:clear' => 'Application cache',
         ];
-        
+
         foreach ($cacheCommands as $command => $description) {
             try {
                 \Illuminate\Support\Facades\Artisan::call($command);
@@ -240,18 +210,18 @@ class A2CommerceUninstallCommand extends Command
             }
         }
     }
-    
+
     /**
      * Create final backup before uninstallation
      */
     private function createFinalBackup(): void
     {
         $backupDir = storage_path('app/a2commerce-final-backup-' . date('Y-m-d-H-i-s'));
-        
+
         if (!File::exists($backupDir)) {
             File::makeDirectory($backupDir, 0755, true);
         }
-        
+
         $filesToBackup = [
             app_path('Services/A2') => $backupDir . '/Services/A2',
             app_path('Http/Controllers/A2') => $backupDir . '/Http/Controllers/A2',
@@ -265,7 +235,7 @@ class A2CommerceUninstallCommand extends Command
             base_path('routes/api.php') => $backupDir . '/routes/api.php',
             base_path('.env') => $backupDir . '/.env',
         ];
-        
+
         foreach ($filesToBackup as $source => $destination) {
             if (File::exists($source)) {
                 if (File::isDirectory($source)) {
@@ -276,10 +246,10 @@ class A2CommerceUninstallCommand extends Command
                 }
             }
         }
-        
+
         $this->info("   ✅ Final backup created in: " . $this->getRelativePath($backupDir));
     }
-    
+
     /**
      * Display the header
      */
@@ -290,7 +260,7 @@ class A2CommerceUninstallCommand extends Command
         $this->line('   Version: ' . A2Commerce::VERSION);
         $this->newLine();
     }
-    
+
     /**
      * Display a step message
      */
@@ -298,7 +268,7 @@ class A2CommerceUninstallCommand extends Command
     {
         $this->info("🗂️  {$message}");
     }
-    
+
     /**
      * Display completion message
      */
@@ -307,7 +277,7 @@ class A2CommerceUninstallCommand extends Command
         $this->newLine();
         $this->info('🎉 A2Commerce package uninstalled successfully!');
         $this->newLine();
-        
+
         $this->comment('📋 What was removed:');
         $this->line('   ✅ All A2Commerce copied files and stubs');
         $this->line('   ✅ PayPal webhook route from routes/api.php');
@@ -319,20 +289,19 @@ class A2CommerceUninstallCommand extends Command
         $this->line('   ✅ Application caches cleared');
         $this->line('   ✅ Final backup created in storage/app/');
         $this->newLine();
-        
+
         $this->comment('📖 Final steps:');
         $this->line('   1. Remove "a2-atu/a2commerce" from your composer.json');
         $this->line('   2. Run: composer remove a2-atu/a2commerce');
         $this->line('   3. Manually remove database tables if needed (migrations are not rolled back)');
         $this->line('   4. Review your application for any remaining A2Commerce references');
         $this->newLine();
-        
+
         if ($keepEnv) {
             $this->warn('⚠️  Note: Environment variables were preserved. Remove them manually if needed.');
             $this->newLine();
         }
-        
+
         $this->info('✨ Thank you for using A2Commerce!');
     }
 }
-
