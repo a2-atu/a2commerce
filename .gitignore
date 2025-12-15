@@ -43,3 +43,5 @@ workspace.xml
 *.csr
 
 example-package
+
+sample-package

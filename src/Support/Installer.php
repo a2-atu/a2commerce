@@ -186,7 +186,7 @@ PHP;
             ->implode(DIRECTORY_SEPARATOR);
     }
 
-    private function ensureEnvKeys(): array
+    public function ensureEnvKeys(): array
     {
         $paths = [
             $this->pathJoin($this->appBasePath, '.env'),
@@ -281,7 +281,7 @@ PHP;
         return $removed;
     }
 
-    private function ensureRoutes(): array
+    public function ensureRoutes(): array
     {
         $apiPath = $this->pathJoin($this->appBasePath, 'routes', 'api.php');
         $updated = false;
