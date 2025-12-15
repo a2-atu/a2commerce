@@ -4,7 +4,7 @@ namespace A2\A2Commerce;
 
 class A2Commerce
 {
-    public const VERSION = '0.1.2';
+    public const VERSION = '0.1.3';
 
     /**
      * Absolute path to the package stubs.
@@ -16,4 +16,3 @@ class A2Commerce
         return $suffix ? $base . '/' . ltrim($suffix, '/') : $base;
     }
 }
-
