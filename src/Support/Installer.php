@@ -34,8 +34,7 @@ PHP;
         private readonly Filesystem $files,
         private readonly string $stubsPath,
         private readonly string $appBasePath
-    ) {
-    }
+    ) {}
 
     /**
      * Install fresh assets and env keys.
@@ -181,8 +180,8 @@ PHP;
     private function pathJoin(string ...$parts): string
     {
         return collect($parts)
-            ->filter(fn ($p) => $p !== '')
-            ->map(fn ($p) => trim($p, '/\\'))
+            ->filter(fn($p) => $p !== '')
+            ->map(fn($p) => trim($p, '/\\'))
             ->implode(DIRECTORY_SEPARATOR);
     }
 
@@ -196,7 +195,13 @@ PHP;
         $added = [];
 
         foreach ($paths as $envPath) {
-            $existing = $this->files->exists($envPath) ? $this->files->get($envPath) : '';
+            // Mirror Vormia behavior: only touch env files if they already exist.
+            if (! $this->files->exists($envPath)) {
+                $added[$envPath] = [];
+                continue;
+            }
+
+            $existing = $this->files->get($envPath);
             $addedKeys = [];
             $updated = $this->appendEnvBlock($existing, $addedKeys);
 
@@ -455,4 +460,3 @@ PHP;
         }
     }
 }
-
