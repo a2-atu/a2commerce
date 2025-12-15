@@ -24,6 +24,7 @@ class Installer
     private const ROUTE_MARK_END = '// >>> A2Commerce Routes END';
     private const ROUTE_BLOCK = <<<'PHP'
 // >>> A2Commerce Routes START
+// A2 Payment webhooks (no authentication required for webhooks)
 Route::prefix('a2/payment')->group(function () {
     Route::post('/paypal/webhook', [\App\Http\Controllers\A2\Commerce\PaymentController::class, 'webhookPayPal'])->name('api.payment.paypal.webhook');
 });
@@ -290,35 +291,29 @@ PHP;
     {
         $apiPath = $this->pathJoin($this->appBasePath, 'routes', 'api.php');
         $updated = false;
-        $importAdded = false;
 
-        $contents = $this->files->exists($apiPath)
-            ? $this->files->get($apiPath)
-            : "<?php\n\nuse Illuminate\\Support\\Facades\\Route;\n\n";
-
-        if (!str_contains($contents, 'Illuminate\\Support\\Facades\\Route')) {
-            $contents = preg_replace('/<\\?php\\s*/', "<?php\n\nuse Illuminate\\Support\\Facades\\Route;\n", $contents, 1, $count);
-            if ($count === 0) {
-                $contents = "<?php\n\nuse Illuminate\\Support\\Facades\\Route;\n\n" . ltrim($contents, "<?php");
-            }
-            $importAdded = true;
-            $updated = true;
+        if (! $this->files->exists($apiPath)) {
+            return [
+                'path' => $apiPath,
+                'added' => false,
+                'import_added' => false,
+                'skipped' => true,
+            ];
         }
 
-        if (!str_contains($contents, self::ROUTE_MARK_START)) {
+        $contents = $this->files->get($apiPath);
+
+        if (! str_contains($contents, self::ROUTE_MARK_START)) {
             $contents = rtrim($contents) . "\n\n" . self::ROUTE_BLOCK . "\n";
-            $updated = true;
-        }
-
-        if ($updated) {
-            $this->files->ensureDirectoryExists(dirname($apiPath));
             $this->files->put($apiPath, $contents);
+            $updated = true;
         }
 
         return [
             'path' => $apiPath,
             'added' => $updated,
-            'import_added' => $importAdded,
+            'import_added' => false,
+            'skipped' => false,
         ];
     }
 

@@ -6,6 +6,7 @@ use A2\A2Commerce\A2Commerce;
 use A2\A2Commerce\Support\Installer;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Artisan;
 
 class A2CommerceUninstallCommand extends Command
 {
@@ -30,7 +31,8 @@ class A2CommerceUninstallCommand extends Command
         } else {
             $this->warn('   • Keep environment variables (--keep-env flag used)');
         }
-        $this->warn('   • Note: Database tables and migrations are NOT removed');
+        $this->warn('   • Remove A2Commerce migrations (a2_ec_*)');
+        $this->warn('   • Note: Database tables are not dropped automatically');
         $this->warn('   • Note: Composer packages are NOT uninstalled');
         $this->newLine();
 
@@ -84,7 +86,11 @@ class A2CommerceUninstallCommand extends Command
         $this->step('Removing API routes...');
         $this->handleRoutes($results['routes'] ?? []);
 
-        // Step 5: Clear caches
+        // Step 5: Remove migrations for A2Commerce
+        $this->step('Removing A2Commerce migrations...');
+        $this->removeMigrations();
+
+        // Step 6: Clear caches
         $this->step('Clearing application caches...');
         $this->clearCaches();
 
@@ -138,16 +144,29 @@ class A2CommerceUninstallCommand extends Command
         }
 
         $removed = 0;
+        $rolledBack = false;
         foreach (File::files($migrationPath) as $file) {
-            if (str_contains($file->getFilename(), 'a2_ec_')) {
+            if (str_starts_with($file->getFilename(), 'a2_ec_')) {
+                try {
+                    Artisan::call('migrate:rollback', ['--path' => 'database/migrations/' . $file->getFilename(), '--force' => true]);
+                    $this->line('   Rolled back migration: ' . $file->getFilename());
+                    $rolledBack = true;
+                } catch (\Exception $e) {
+                    $this->warn('   Could not rollback migration: ' . $file->getFilename() . ' (' . $e->getMessage() . ')');
+                }
+
                 File::delete($file->getPathname());
-                $this->line("   ✅ Removed migration: " . $file->getFilename());
+                $this->line("   ✅ Removed migration file: " . $file->getFilename());
                 $removed++;
             }
         }
 
         if ($removed === 0) {
             $this->line("   ℹ️  No A2Commerce migrations found to remove");
+        }
+
+        if (! $rolledBack && $removed > 0) {
+            $this->warn('   ⚠️  No migrations were rolled back automatically. You may need to drop A2Commerce tables manually.');
         }
     }
 
@@ -300,6 +319,7 @@ class A2CommerceUninstallCommand extends Command
         } else {
             $this->line('   ⚠️  Environment variables preserved (--keep-env)');
         }
+        $this->line('   ✅ A2Commerce migration files (a2_ec_*)');
         $this->line('   ✅ Application caches cleared');
         $this->line('   ✅ Final backup created in storage/app/');
         $this->newLine();

@@ -20,17 +20,21 @@ class A2CommerceInstallCommand extends Command
         $overwrite = !$this->option('no-overwrite');
         $touchEnv = !$this->option('skip-env');
 
-        // Use Installer's install method to ensure files are tracked correctly for uninstall
-        // This ensures the same path mapping is used for install and uninstall
+        // Use Installer's install method to ensure files are tracked correctly for uninstall.
+        // Env files are handled directly in this command (mirroring Vormia behavior).
         $this->step('Copying A2Commerce files and stubs...');
-        $results = $installer->install($overwrite, $touchEnv);
+        $results = $installer->install($overwrite, false);
 
         // Show detailed output grouped by directory
         $this->displayCopyResults($results['copied']);
 
         // Step 2: Environment variables
         $this->step('Updating environment files...');
-        $this->handleEnvResults($results['env'] ?? [], $touchEnv);
+        if ($touchEnv) {
+            $this->updateEnvFiles();
+        } else {
+            $this->line('   ⏭️  Environment keys skipped (--skip-env flag used).');
+        }
 
         // Step 3: Routes
         $this->step('Ensuring API routes...');
@@ -140,36 +144,45 @@ class A2CommerceInstallCommand extends Command
     }
 
     /**
-     * Handle environment file results
+     * Update .env and .env.example files with A2 configuration
      */
-    private function handleEnvResults(array $envResults, bool $touchEnv): void
+    private function updateEnvFiles(): void
     {
-        if (!$touchEnv) {
-            $this->line('   ⏭️  Environment keys skipped (--skip-env flag used).');
-            return;
-        }
+        $envPath = base_path('.env');
+        $envExamplePath = base_path('.env.example');
 
-        $envUpdated = false;
-        $filesChecked = [];
+        $envBlock = "\n# A2 CONFIGURATION\n"
+            . "A2_PAYPAL_MODE=sandbox\n"
+            . "\n"
+            . "A2_PAYPAL_SECRET=\n"
+            . "A2_PAYPAL_CLIENT_ID=\n"
+            . "A2_PAYPAL_WEBHOOK_ID=\n"
+            . "\n"
+            . "A2_ORDER_PREFIX=\"SP-OD\"\n"
+            . "A2_TAX_RATE=0\n"
+            . "A2_SHIPPING_FEE=0\n"
+            . "\n"
+            . "A2_CURRENCY=USD\n"
+            . "A2_CURRENCY_SYMBOL=\"$\"\n"
+            . "A2_CURRENCY_CONVERSION_RATE=1\n";
 
-        foreach ($envResults as $file => $keys) {
-            $filesChecked[] = basename($file);
-
-            if ($keys !== []) {
-                $this->info("   ✅ Added to " . basename($file) . ": " . implode(', ', $keys));
-                $envUpdated = true;
-            } else {
-                // File exists but no keys were added (they already exist)
-                $this->line("   ℹ️  " . basename($file) . " already contains A2Commerce keys");
+        // Update .env
+        if (File::exists($envPath)) {
+            $content = File::get($envPath);
+            if (strpos($content, 'A2_PAYPAL_MODE') === false) {
+                File::append($envPath, $envBlock);
             }
         }
 
-        if (empty($filesChecked)) {
-            $this->warn('   ⚠️  No .env or .env.example files found. Environment keys were not added.');
-            $this->line('   Create .env and .env.example files if you want A2Commerce to add environment variables automatically.');
-        } elseif (!$envUpdated) {
-            $this->info('   ✅ All environment files already contain A2Commerce keys.');
+        // Update .env.example
+        if (File::exists($envExamplePath)) {
+            $content = File::get($envExamplePath);
+            if (strpos($content, 'A2_PAYPAL_MODE') === false) {
+                File::append($envExamplePath, $envBlock);
+            }
         }
+
+        $this->info('   ✅ Environment files updated successfully (A2 configuration).');
     }
 
     /**
@@ -177,12 +190,20 @@ class A2CommerceInstallCommand extends Command
      */
     private function handleRoutes(array $routes): void
     {
-        if ($routes !== []) {
-            if ($routes['added'] ?? false) {
-                $this->info('   ✅ PayPal webhook route added to routes/api.php');
-            } else {
-                $this->info('   ✅ PayPal webhook route already exists in routes/api.php');
-            }
+        if ($routes === []) {
+            return;
+        }
+
+        if ($routes['skipped'] ?? false) {
+            $this->warn('   ⚠️  routes/api.php not found. PayPal webhook route was not added.');
+            $this->line('   Create routes/api.php first, then re-run the installer to add the webhook route.');
+            return;
+        }
+
+        if ($routes['added'] ?? false) {
+            $this->info('   ✅ PayPal webhook route added to routes/api.php');
+        } else {
+            $this->info('   ✅ PayPal webhook route already exists in routes/api.php');
         }
     }
 
