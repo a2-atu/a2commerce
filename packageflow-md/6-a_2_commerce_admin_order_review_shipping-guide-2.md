@@ -77,14 +77,14 @@ expires_at, consumed_at, timestamps
 All new admin routes must be protected by:
 middleware => ['auth', 'can:manage-commerce']
 
-| Section    | Routes              |
-| ---------- | ------------------- |
-| Orders     | admin/a2/orders     |
-| Wishlist   | admin/a2/wishlist   |
-| Shipping   | admin/a2/shipping   |
-| Reviews    | admin/a2/reviews    |
-| Reports    | admin/a2/reports    |
-| Admin Cart | admin/a2/admin-cart |
+| Section    | Routes                       |
+| ---------- | ---------------------------- |
+| Orders     | admin/a2/commerce/orders     |
+| Wishlist   | admin/a2/commerce/wishlist   |
+| Shipping   | admin/a2/commerce/shipping   |
+| Reviews    | admin/a2/commerce/reviews    |
+| Reports    | admin/a2/commerce/reports    |
+| Admin Cart | admin/a2/commerce/admin-cart |
 
 Shared cart URL format for customers (signed):
 
@@ -105,8 +105,8 @@ Shared cart URL format for customers (signed):
 
 Rules:
 
--   Enforce expiry time
--   Tokens are one-time use → first consumption wins
+- Enforce expiry time
+- Tokens are one-time use → first consumption wins
 
 ---
 
@@ -171,9 +171,9 @@ Rules:
 
 Edge case handling:
 
--   Price changed → show warning and require confirmation
--   Token expired → redirect to “link expired” screen
--   Double click abuse → first consumption wins
+- Price changed → show warning and require confirmation
+- Token expired → redirect to “link expired” screen
+- Double click abuse → first consumption wins
 
 ---
 
@@ -208,9 +208,9 @@ Developers must include feature tests for:
 
 ## 10. Deployment Warnings
 
--   Migrations altering `orders` & `product_reviews` tables require maintenance window.
--   Always backup DB before migrating.
--   Use feature flags to enable **Admin Cart** & **Shipping** progressively.
+- Migrations altering `orders` & `product_reviews` tables require maintenance window.
+- Always backup DB before migrating.
+- Use feature flags to enable **Admin Cart** & **Shipping** progressively.
 
 ---
 
@@ -232,8 +232,8 @@ Developers must include feature tests for:
 
 Once this plan is completed, the admin tools for commerce will function with:
 
--   Order + shipping control
--   Customer reviews + admin reviews
--   Wishlist management
--   Reporting
--   Secure admin → customer shared carts
+- Order + shipping control
+- Customer reviews + admin reviews
+- Wishlist management
+- Reporting
+- Secure admin → customer shared carts

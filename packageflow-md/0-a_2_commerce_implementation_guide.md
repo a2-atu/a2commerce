@@ -20,11 +20,11 @@
 
 The A2 Commerce implementation follows a **decoupled, event-driven architecture** with clear separation of concerns:
 
--   **Events**: Trigger actions (e.g., `CartUpdated`, `OrderCreated`)
--   **Listeners**: Handle business logic in response to events
--   **Services**: Encapsulate core business logic (Cart, Order, Payment, etc.)
--   **Models**: Eloquent models for database interaction
--   **Livewire Volt Components**: Frontend UI components with reactive state
+- **Events**: Trigger actions (e.g., `CartUpdated`, `OrderCreated`)
+- **Listeners**: Handle business logic in response to events
+- **Services**: Encapsulate core business logic (Cart, Order, Payment, etc.)
+- **Models**: Eloquent models for database interaction
+- **Livewire Volt Components**: Frontend UI components with reactive state
 
 ### Key Principles
 
@@ -75,38 +75,38 @@ protected $listen = [
 
 **Cart Events:**
 
--   `CartUpdated` - Fired when cart items are added/updated
--   `CartItemRemoved` - Fired when an item is removed from cart
+- `CartUpdated` - Fired when cart items are added/updated
+- `CartItemRemoved` - Fired when an item is removed from cart
 
 **Wishlist Events:**
 
--   `ProductAddedToWishlist` - Fired when product is added to wishlist
--   `ProductRemovedFromWishlist` - Fired when product is removed
--   `WishlistUpdated` - Fired when wishlist changes
--   `WishlistViewed` - Fired when user views wishlist
+- `ProductAddedToWishlist` - Fired when product is added to wishlist
+- `ProductRemovedFromWishlist` - Fired when product is removed
+- `WishlistUpdated` - Fired when wishlist changes
+- `WishlistViewed` - Fired when user views wishlist
 
 **Comparison Events:**
 
--   `ProductAddedToComparison` - Fired when product is added to comparison
--   `ComparisonUpdated` - Fired when comparison list changes
--   `ComparisonCleared` - Fired when comparison list is cleared
--   `ComparisonViewed` - Fired when user views comparison
+- `ProductAddedToComparison` - Fired when product is added to comparison
+- `ComparisonUpdated` - Fired when comparison list changes
+- `ComparisonCleared` - Fired when comparison list is cleared
+- `ComparisonViewed` - Fired when user views comparison
 
 **Order Events:**
 
--   `OrderCreated` - Fired when new order is created
--   `OrderStatusUpdated` - Fired when order status changes
--   `OrderCompleted` - Fired when order is completed
+- `OrderCreated` - Fired when new order is created
+- `OrderStatusUpdated` - Fired when order status changes
+- `OrderCompleted` - Fired when order is completed
 
 **Payment Events:**
 
--   `PaymentCompleted` - Fired when payment is successfully completed
--   `PaymentFailed` - Fired when payment fails
+- `PaymentCompleted` - Fired when payment is successfully completed
+- `PaymentFailed` - Fired when payment fails
 
 ### Creating New Events
 
 ```php
-// app/Events/A2/YourEvent.php
+// app/Events/A2/Commerce/YourEvent.php
 <?php
 
 namespace App\Events\A2;
@@ -127,7 +127,7 @@ class YourEvent
 ### Creating New Listeners
 
 ```php
-// app/Listeners/A2/YourListener.php
+// app/Listeners/A2/Commerce/YourListener.php
 <?php
 
 namespace App\Listeners\A2;
@@ -151,7 +151,7 @@ class YourListener
 
 ### Core Services
 
-All services are located in `app/Services/A2/`:
+All services are located in `app/Services/A2/Commerce/`:
 
 1. **CartService** - Manages shopping cart operations
 2. **WishlistService** - Manages wishlist operations
@@ -236,31 +236,31 @@ Services handle both guest and authenticated users:
 
 **Products:**
 
--   `a2_ec_products` - Main product table
--   `a2_ec_product_variations` - Product variations
--   `a2_ec_product_taxonomies` - Product-category relationships
+- `a2_ec_products` - Main product table
+- `a2_ec_product_variations` - Product variations
+- `a2_ec_product_taxonomies` - Product-category relationships
 
 **Orders:**
 
--   `a2_ec_orders` - Order header (user_id nullable for guests)
--   `a2_ec_order_items` - Order line items
--   `a2_ec_order_address` - Shipping/billing addresses (includes guest contact info)
--   `a2_ec_order_finance` - Financial records
--   `a2_ec_order_action_log` - Order activity log
+- `a2_ec_orders` - Order header (user_id nullable for guests)
+- `a2_ec_order_items` - Order line items
+- `a2_ec_order_address` - Shipping/billing addresses (includes guest contact info)
+- `a2_ec_order_finance` - Financial records
+- `a2_ec_order_action_log` - Order activity log
 
 **Cart & Wishlist:**
 
--   `a2_ec_reserved_stock` - Reserved stock for cart items
--   `a2_ec_wishlist` - User wishlist items
+- `a2_ec_reserved_stock` - Reserved stock for cart items
+- `a2_ec_wishlist` - User wishlist items
 
 **Comparison:**
 
--   `a2_ec_comparison_sessions` - Comparison session tracking
--   `a2_ec_comparison_items` - Items in comparison list
+- `a2_ec_comparison_sessions` - Comparison session tracking
+- `a2_ec_comparison_items` - Items in comparison list
 
 **Payments:**
 
--   `a2_ec_payments` - Payment records
+- `a2_ec_payments` - Payment records
 
 ### Guest Checkout Schema
 
@@ -268,10 +268,10 @@ Services handle both guest and authenticated users:
 
 Guest contact information is stored in `a2_ec_order_address`:
 
--   `first_name`
--   `last_name`
--   `email`
--   `phone`
+- `first_name`
+- `last_name`
+- `email`
+- `phone`
 
 ### Model Relationships
 
@@ -368,13 +368,13 @@ new #[Layout('components.layouts.landing')] class extends Component {
 
 **Landing Layout** (`components.layouts.landing`):
 
--   Used for all public-facing buyer pages
--   Includes navigation, footer, and common UI elements
+- Used for all public-facing buyer pages
+- Includes navigation, footer, and common UI elements
 
 **Admin Layout** (`components.layouts.app`):
 
--   Used for admin/authenticated pages
--   Different navigation structure
+- Used for admin/authenticated pages
+- Different navigation structure
 
 ### Event Dispatching
 
@@ -396,14 +396,14 @@ $this->dispatch('product-added-to-cart', [
 
 ```javascript
 window.addEventListener("product-added-to-cart", (event) => {
-    const { productId, quantity, product } = event.detail;
+  const { productId, quantity, product } = event.detail;
 
-    Swal.fire({
-        icon: "success",
-        title: "Added to Cart!",
-        text: `${product.name} (${quantity}x) has been added to your cart.`,
-        timer: 3000,
-    });
+  Swal.fire({
+    icon: "success",
+    title: "Added to Cart!",
+    text: `${product.name} (${quantity}x) has been added to your cart.`,
+    timer: 3000,
+  });
 });
 ```
 
@@ -438,13 +438,13 @@ window.addEventListener("product-added-to-cart", (event) => {
 
 **Supported Methods:**
 
--   `paypal` - PayPal JavaScript SDK integration
--   `payment_on_delivery` - Cash on delivery (payment_status = 'unpaid')
+- `paypal` - PayPal JavaScript SDK integration
+- `payment_on_delivery` - Cash on delivery (payment_status = 'unpaid')
 
 ### Payment Controller
 
 ```php
-// app/Http/Controllers/A2/PaymentController.php
+// app/Http/Controllers/A2/Commerce/PaymentController.php
 
 // Initialize PayPal payment
 public function initPayPal(Request $request, ?int $orderId = null)
@@ -468,43 +468,43 @@ public function failed(Request $request)
 // resources/views/livewire/front/payment/paypal.blade.php
 
 paypal
-    .Buttons({
-        createOrder: function (data, actions) {
-            return actions.order.create({
-                purchase_units: [
-                    {
-                        amount: {
-                            value: usdAmount, // Converted from local currency
-                            currency_code: "USD",
-                        },
-                    },
-                ],
-            });
-        },
-        onApprove: function (data, actions) {
-            return actions.order.capture().then(function (details) {
-                // Call backend to confirm payment
-                fetch("/a2/payment/paypal/confirm", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-CSRF-TOKEN": csrfToken,
-                    },
-                    body: JSON.stringify({
-                        order_id: orderId,
-                        paypal_order_id: data.orderID,
-                    }),
-                });
-            });
-        },
-    })
-    .render("#paypal-button-container");
+  .Buttons({
+    createOrder: function (data, actions) {
+      return actions.order.create({
+        purchase_units: [
+          {
+            amount: {
+              value: usdAmount, // Converted from local currency
+              currency_code: "USD",
+            },
+          },
+        ],
+      });
+    },
+    onApprove: function (data, actions) {
+      return actions.order.capture().then(function (details) {
+        // Call backend to confirm payment
+        fetch("/a2/commerce/payment/paypal/confirm", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": csrfToken,
+          },
+          body: JSON.stringify({
+            order_id: orderId,
+            paypal_order_id: data.orderID,
+          }),
+        });
+      });
+    },
+  })
+  .render("#paypal-button-container");
 ```
 
 ### Payment Verification
 
 ```php
-// app/Services/A2/PayPalPaymentService.php
+// app/Services/A2/Commerce/PayPalPaymentService.php
 
 public function verifyOrder(string $paypalOrderId): array
 {
@@ -521,9 +521,9 @@ public function verifyOrder(string $paypalOrderId): array
 
 **1. Checkout Page** (`front.checkout.index`):
 
--   No authentication required
--   Collects guest contact info: `first_name`, `last_name`, `email`, `phone`
--   Payment method selection: PayPal or Payment on Delivery
+- No authentication required
+- Collects guest contact info: `first_name`, `last_name`, `email`, `phone`
+- Payment method selection: PayPal or Payment on Delivery
 
 **2. Order Creation**:
 
@@ -551,9 +551,9 @@ A2OrderAddress::create([
 
 **3. Guest Order Viewing**:
 
--   Route: `order.guest.show` (`/order/{orderNumber}`)
--   Requires: `order_number` and `email` (as query parameter)
--   Verifies: Order exists and email matches
+- Route: `order.guest.show` (`/order/{orderNumber}`)
+- Requires: `order_number` and `email` (as query parameter)
+- Verifies: Order exists and email matches
 
 ```php
 // resources/views/livewire/front/order/guest-show.blade.php
@@ -572,8 +572,8 @@ public function mount(string $orderNumber): void
 
 **4. Payment Redirects**:
 
--   Authenticated users → `account.orders.show`
--   Guest users → `order.guest.show` with email query param
+- Authenticated users → `account.orders.show`
+- Guest users → `order.guest.show` with email query param
 
 ---
 
@@ -583,14 +583,14 @@ public function mount(string $orderNumber): void
 
 **Separate from Admin Auth:**
 
--   Admin login: `/login` (uses `auth` middleware)
--   Buyer login: `/signin` (uses `guest` middleware)
+- Admin login: `/login` (uses `auth` middleware)
+- Buyer login: `/signin` (uses `guest` middleware)
 
 **Buyer Registration:**
 
--   Route: `/signup` (`front.register`)
--   Assigns role ID `3` to new buyers
--   Uses `components.layouts.landing` layout
+- Route: `/signup` (`front.register`)
+- Assigns role ID `3` to new buyers
+- Uses `components.layouts.landing` layout
 
 ### Middleware
 
@@ -632,9 +632,9 @@ Route::middleware('buyer-auth')->group(function () {
 
 When a guest user logs in:
 
--   Guest cart → User cart (automatic via CartService)
--   Guest wishlist → User wishlist (via WishlistService)
--   Guest comparison → User comparison (via ComparisonService)
+- Guest cart → User cart (automatic via CartService)
+- Guest wishlist → User wishlist (via WishlistService)
+- Guest comparison → User comparison (via ComparisonService)
 
 ---
 
@@ -672,7 +672,7 @@ Route::middleware('buyer-auth')->group(function () {
 Volt::route('order/{orderNumber}', 'front.order.guest-show')->name('order.guest.show');
 
 // Payment routes
-Route::prefix('a2/payment')->group(function () {
+Route::prefix('a2/commerce/payment')->group(function () {
     Volt::route('/paypal/{orderId}', 'front.payment.paypal')->name('payment.paypal');
     Route::post('/paypal/init', [PaymentController::class, 'initPayPal'])->name('payment.paypal.init');
     Route::post('/paypal/confirm', [PaymentController::class, 'confirmPayPal'])->name('payment.paypal.confirm');
@@ -683,9 +683,9 @@ Route::prefix('a2/payment')->group(function () {
 
 ### Route Naming Convention
 
--   **Frontend routes**: `front.{feature}.{action}` or `{feature}.{action}`
--   **Payment routes**: `payment.{method}.{action}`
--   **Account routes**: `account.{feature}.{action}`
+- **Frontend routes**: `front.{feature}.{action}` or `{feature}.{action}`
+- **Payment routes**: `payment.{method}.{action}`
+- **Account routes**: `account.{feature}.{action}`
 
 **Always use route names** instead of hardcoded URLs:
 
@@ -1015,41 +1015,41 @@ new class extends Component {
 
 ### Cart Functionality
 
--   [ ] Add product to cart
--   [ ] Update item quantity
--   [ ] Remove item from cart
--   [ ] Clear entire cart
--   [ ] Cart persists across page reloads
--   [ ] Guest cart migrates to user cart on login
+- [ ] Add product to cart
+- [ ] Update item quantity
+- [ ] Remove item from cart
+- [ ] Clear entire cart
+- [ ] Cart persists across page reloads
+- [ ] Guest cart migrates to user cart on login
 
 ### Checkout Flow
 
--   [ ] Guest checkout works without login
--   [ ] Authenticated checkout works
--   [ ] Payment on delivery creates order with 'unpaid' status
--   [ ] PayPal payment redirects correctly
--   [ ] Order confirmation displays correctly
+- [ ] Guest checkout works without login
+- [ ] Authenticated checkout works
+- [ ] Payment on delivery creates order with 'unpaid' status
+- [ ] PayPal payment redirects correctly
+- [ ] Order confirmation displays correctly
 
 ### Payment Integration
 
--   [ ] PayPal payment initializes correctly
--   [ ] PayPal payment confirmation works
--   [ ] Payment status updates correctly
--   [ ] Order status updates after payment
--   [ ] Cart clears after successful payment
+- [ ] PayPal payment initializes correctly
+- [ ] PayPal payment confirmation works
+- [ ] Payment status updates correctly
+- [ ] Order status updates after payment
+- [ ] Cart clears after successful payment
 
 ### Guest Order Viewing
 
--   [ ] Guest can view order with order number and email
--   [ ] Invalid email shows error
--   [ ] Order details display correctly
+- [ ] Guest can view order with order number and email
+- [ ] Invalid email shows error
+- [ ] Order details display correctly
 
 ### Authentication
 
--   [ ] Buyer login redirects correctly
--   [ ] Buyer registration assigns correct role
--   [ ] Protected routes redirect to login
--   [ ] Guest routes accessible without login
+- [ ] Buyer login redirects correctly
+- [ ] Buyer registration assigns correct role
+- [ ] Protected routes redirect to login
+- [ ] Guest routes accessible without login
 
 ---
 
@@ -1101,7 +1101,7 @@ A2_PAYPAL_WEBHOOK_ID=your_webhook_id
 
 ## Next Steps for New Projects
 
-1. **Copy Service Layer**: Copy all services from `app/Services/A2/`
+1. **Copy Service Layer**: Copy all services from `app/Services/A2/Commerce/`
 2. **Copy Events/Listeners**: Copy all events and listeners, register in `AppServiceProvider`
 3. **Copy Models**: Copy all A2 models and ensure relationships are correct
 4. **Copy Components**: Copy Livewire Volt components from `resources/views/livewire/front/`
@@ -1115,10 +1115,10 @@ A2_PAYPAL_WEBHOOK_ID=your_webhook_id
 
 ## Additional Resources
 
--   **Vormia Package Rules**: See `vormiaphp.mdc` for Vormia-specific patterns
--   **Database Schema**: See `a_2_commerce_schema.md` for complete schema documentation
--   **Event Flow**: See `a_2_event_flow.md` for detailed event flow diagrams
--   **Payment Guide**: See `a_2_payment_guide.md` for PayPal integration details
+- **Vormia Package Rules**: See `vormiaphp.mdc` for Vormia-specific patterns
+- **Database Schema**: See `a_2_commerce_schema.md` for complete schema documentation
+- **Event Flow**: See `a_2_event_flow.md` for detailed event flow diagrams
+- **Payment Guide**: See `a_2_payment_guide.md` for PayPal integration details
 
 ---
 

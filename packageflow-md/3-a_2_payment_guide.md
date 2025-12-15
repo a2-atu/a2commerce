@@ -4,9 +4,9 @@ This document explains how to integrate **PayPal, M‑Pesa, Pesapal, Lemon Squee
 
 It includes:
 
-* Webhook URL structure for each gateway (success + failed)
-* Eloquent model & service skeletons
-* Sample test cases for the `PaymentCompleted` event
+- Webhook URL structure for each gateway (success + failed)
+- Eloquent model & service skeletons
+- Sample test cases for the `PaymentCompleted` event
 
 ---
 
@@ -17,17 +17,17 @@ It includes:
 > When more gateways are added, this can switch to **HYBRID** without breaking compatibility.
 
 > **Update: PayPal now uses BOTH JavaScript confirmation + Webhook validation.**
-> Webhook becomes the source of truth — JS confirm only *initiates* verification.
+> Webhook becomes the source of truth — JS confirm only _initiates_ verification.
 > & Callback URL Structure
 > All payment gateways must target the **same internal entry points** so the business logic does not change.
 
 ### **Base Payment Routes**
 
 ```
-POST /a2/payment/{provider}/init        → optional
-POST /a2/payment/{provider}/confirm     → used for PayPal JS button
-POST /a2/payment/{provider}/callback    → for redirect-based gateways
-POST /a2/payment/{provider}/webhook     → for server‑to‑server notifications
+POST /a2/commerce/payment/{provider}/init        → optional
+POST /a2/commerce/payment/{provider}/confirm     → used for PayPal JS button
+POST /a2/commerce/payment/{provider}/callback    → for redirect-based gateways
+POST /a2/commerce/payment/{provider}/webhook     → for server‑to‑server notifications
 ```
 
 ### **Example Routes (expanded)**
@@ -352,9 +352,9 @@ Never trust frontend payment payloads — only JS ID + webhook verification agai
 
 WINS‑JS → HYBRID can occur without refactoring because:
 
-* `a2_ec_payments` already tracks statuses
-* `a2_ec_payment_logs` already preserves lifecycle
-* Events already handle finance/stock/notifications
+- `a2_ec_payments` already tracks statuses
+- `a2_ec_payment_logs` already preserves lifecycle
+- Events already handle finance/stock/notifications
 
 Upgrade path:
 
@@ -371,9 +371,9 @@ No API signature changes needed.
 
 A2 is now correctly positioned to:
 
-* Support **PayPal immediately using JS checkout**
-* Support webhooks safely without breaking flow
-* Support multi‑gateway expansion with a unified payment pipeline
+- Support **PayPal immediately using JS checkout**
+- Support webhooks safely without breaking flow
+- Support multi‑gateway expansion with a unified payment pipeline
 
 This chapter is now **complete and production‑ready for PayPal rollout** and can later support **M‑Pesa, Pesapal, Lemon Squeezy, Cash on Delivery** with zero structural changes.
 
