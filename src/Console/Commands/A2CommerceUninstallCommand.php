@@ -35,16 +35,6 @@ class A2CommerceUninstallCommand extends Command
             return self::SUCCESS;
         }
 
-        // Final confirmation
-        if (!$force) {
-            $this->newLine();
-            $this->error('🚨 FINAL WARNING: This action cannot be undone!');
-            if (!$this->confirm('Type "yes" to proceed with uninstallation', false)) {
-                $this->info('❌ Uninstall cancelled.');
-                return self::SUCCESS;
-            }
-        }
-
         // Ask about migrations
         $undoMigrations = false;
         if (!$force) {
@@ -223,11 +213,11 @@ class A2CommerceUninstallCommand extends Command
                 // Step 3: Delete migration files
                 File::delete($file->getPathname());
                 $this->line("   ✅ Removed migration file: " . $file->getFilename());
-                
+
                 // Extract migration name (filename without .php extension) for database cleanup
                 $migrationName = str_replace('.php', '', $file->getFilename());
                 $migrationNames[] = $migrationName;
-                
+
                 $removed++;
             }
         }
