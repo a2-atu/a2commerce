@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4] - 2025-12-16
+
+### Changed
+
+- **Installer Class**: Refactored for improved code readability and maintainability
+  - Simplified constructor syntax
+  - Enhanced environment file handling to mirror Vormia behavior
+  - Ensures env files are only modified if they already exist
+- **Path Handling**: Improved `pathJoin` method in Installer class
+  - Better handling of absolute and relative paths
+  - Enhanced filtering of input parts
+  - Proper trimming of slashes based on path type
+  - Normalized blank lines in environment file processing for better consistency
+
+### Enhanced
+
+- **Installation Command**: Streamlined file handling and improved user feedback
+  - Unified installer method for copying and removing files
+  - Enhanced environment variable management
+  - Detailed output for copied and removed files
+  - Consistent handling of existing files during operations
+  - Appends A2 configuration to .env and .env.example files only if they do not already exist
+- **Uninstallation Command**: Enhanced user interaction and clarity
+  - Introduced prompts for rolling back migrations and removing environment variables
+  - Clearer warnings about data loss
+  - Completion messages reflect user choices regarding migrations and environment variables
+  - Streamlined process to only remove files originally installed by the package
+  - Better feedback throughout the uninstallation steps
+  - Enhanced environment variable handling
+
 ## [0.1.3] - 2025-01-XX
 
 ### Added
@@ -78,4 +108,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [0.1.2]: https://github.com/a2-atu/a2commerce/releases/tag/v0.1.2
 [0.1.3]: https://github.com/a2-atu/a2commerce/releases/tag/v0.1.3
+[0.1.4]: https://github.com/a2-atu/a2commerce/releases/tag/v0.1.4
 
