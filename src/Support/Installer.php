@@ -410,6 +410,11 @@ PHP;
                 continue;
             }
 
+            // Skip if the file is a migration file
+            if (str_contains($target, 'migrations')) {
+                continue;
+            }
+
             $this->files->delete($target);
             $removed[] = $target;
             $this->pruneEmptyParents(dirname($target), $this->rootPathFor($root));

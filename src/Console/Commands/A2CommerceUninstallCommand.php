@@ -202,12 +202,14 @@ class A2CommerceUninstallCommand extends Command
         $migrationNames = []; // Collect migration names for database cleanup
 
         foreach (File::files($migrationPath) as $file) {
-            if (str_starts_with($file->getFilename(), 'a2_ec_')) {
+            if (str_contains($file->getFilename(), 'a2_ec_')) {
                 try {
                     Artisan::call('migrate:rollback', ['--path' => 'database/migrations/' . $file->getFilename(), '--force' => true]);
                     $this->line('   Rolled back migration: ' . $file->getFilename());
 
-                    DB::table('migrations')->where('migration', $file->getFilename())->delete();
+                    // File name without extension
+                    // $fileNameWithoutExtension = str_replace('.php', '', $file->getFilename());
+                    // DB::table('migrations')->where('migration', $fileNameWithoutExtension)->delete();
                     // $this->line("   ✅ Removed migration record from migrations table: " . $file->getFilename());
 
                     $rolledBack = true;
@@ -215,13 +217,10 @@ class A2CommerceUninstallCommand extends Command
                     $this->warn('   Could not rollback migration: ' . $file->getFilename() . ' (' . $e->getMessage() . ')');
                 }
 
-                DB::table('migrations')->where('migration', $file->getFilename())->delete();
-
-                Log::info("Removed migration record from migrations table: " . $file->getFilename());
 
                 // Step 3: Delete migration files
                 File::delete($file->getPathname());
-                $this->line("   ✅ Removed migration file: " . $file->getFilename());
+                // $this->line("   ✅ Removed migration file: " . $file->getFilename());
 
                 // Extract migration name (filename without .php extension) for database cleanup
                 $migrationName = str_replace('.php', '', $file->getFilename());
@@ -238,14 +237,13 @@ class A2CommerceUninstallCommand extends Command
 
         // Step 4: Remove migration records from migrations table
         if (!empty($migrationNames)) {
-            $this->removeMigrationRecords($migrationNames);
+            // $this->removeMigrationRecords($migrationNames);
         }
 
         if (! $rolledBack && $removed > 0) {
             $this->line('   ℹ️  Note: Some migrations could not be rolled back, but tables were dropped directly.');
         }
     }
-
     /**
      * Remove migration records from the migrations table
      */
