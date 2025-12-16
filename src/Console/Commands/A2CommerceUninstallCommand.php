@@ -208,6 +208,8 @@ class A2CommerceUninstallCommand extends Command
 
         $removed = 0;
         $rolledBack = false;
+        $migrationNames = []; // Collect migration names for database cleanup
+
         foreach (File::files($migrationPath) as $file) {
             if (str_starts_with($file->getFilename(), 'a2_ec_')) {
                 try {
@@ -221,16 +223,55 @@ class A2CommerceUninstallCommand extends Command
                 // Step 3: Delete migration files
                 File::delete($file->getPathname());
                 $this->line("   ✅ Removed migration file: " . $file->getFilename());
+                
+                // Extract migration name (filename without .php extension) for database cleanup
+                $migrationName = str_replace('.php', '', $file->getFilename());
+                $migrationNames[] = $migrationName;
+                
                 $removed++;
             }
         }
 
         if ($removed === 0) {
             $this->line("   ℹ️  No A2Commerce migrations found to remove");
+            return;
+        }
+
+        // Step 4: Remove migration records from migrations table
+        if (!empty($migrationNames)) {
+            $this->removeMigrationRecords($migrationNames);
         }
 
         if (! $rolledBack && $removed > 0) {
             $this->line('   ℹ️  Note: Some migrations could not be rolled back, but tables were dropped directly.');
+        }
+    }
+
+    /**
+     * Remove migration records from the migrations table
+     */
+    private function removeMigrationRecords(array $migrationNames): void
+    {
+        try {
+            // Check if migrations table exists
+            if (!DB::getSchemaBuilder()->hasTable('migrations')) {
+                $this->line('   ℹ️  Migrations table does not exist, skipping record removal.');
+                return;
+            }
+
+            // Delete records where migration column matches the migration names
+            $deleted = DB::table('migrations')
+                ->whereIn('migration', $migrationNames)
+                ->delete();
+
+            if ($deleted > 0) {
+                $this->info("   ✅ Removed {$deleted} migration record(s) from migrations table");
+            } else {
+                $this->line('   ℹ️  No matching migration records found in migrations table');
+            }
+        } catch (\Exception $e) {
+            $this->warn('   ⚠️  Could not remove migration records from migrations table: ' . $e->getMessage());
+            $this->line('   ℹ️  You may need to manually remove these records from the migrations table');
         }
     }
 

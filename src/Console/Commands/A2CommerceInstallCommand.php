@@ -5,6 +5,7 @@ namespace A2\A2Commerce\Console\Commands;
 use A2\A2Commerce\A2Commerce;
 use A2\A2Commerce\Support\Installer;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 
 class A2CommerceInstallCommand extends Command
@@ -40,7 +41,10 @@ class A2CommerceInstallCommand extends Command
         $this->step('Ensuring API routes...');
         $this->handleRoutes($results['routes'] ?? []);
 
-        $this->displayCompletionMessage($touchEnv);
+        // Step 4: Migrations
+        $migrationsRun = $this->handleMigrations();
+
+        $this->displayCompletionMessage($touchEnv, $migrationsRun);
 
         return self::SUCCESS;
     }
@@ -227,9 +231,54 @@ class A2CommerceInstallCommand extends Command
     }
 
     /**
+     * Handle migrations prompt and execution
+     */
+    private function handleMigrations(): bool
+    {
+        $this->step('Running database migrations...');
+
+        if (!$this->confirm('Would you like to run migrations now?', true)) {
+            $this->line('   ⏭️  Migrations skipped. You can run them later with: php artisan migrate');
+            return false;
+        }
+
+        return $this->runMigrations();
+    }
+
+    /**
+     * Run database migrations
+     */
+    private function runMigrations(): bool
+    {
+        try {
+            $this->line('   Running migrations...');
+            $exitCode = Artisan::call('migrate', [], $this->getOutput());
+
+            // Display any output from the migrate command
+            $output = Artisan::output();
+            if (!empty(trim($output))) {
+                $this->line($output);
+            }
+
+            if ($exitCode === 0) {
+                $this->info('   ✅ Migrations completed successfully!');
+                return true;
+            } else {
+                $this->error('   ❌ Migrations completed with errors (exit code: ' . $exitCode . ')');
+                $this->warn('   ⚠️  You can run migrations manually later with: php artisan migrate');
+                return false;
+            }
+        } catch (\Exception $e) {
+            $this->error('   ❌ Migration failed: ' . $e->getMessage());
+            $this->warn('   ⚠️  You can run migrations manually later with: php artisan migrate');
+            return false;
+        }
+    }
+
+    /**
      * Display completion message with next steps
      */
-    private function displayCompletionMessage(bool $envTouched): void
+    private function displayCompletionMessage(bool $envTouched, bool $migrationsRun): void
     {
         $this->newLine();
         $this->info('🎉 A2Commerce package installed successfully!');
@@ -239,8 +288,14 @@ class A2CommerceInstallCommand extends Command
         $this->line('   1. Review and configure your .env file with PayPal credentials:');
         $this->line('   2. Configure commerce settings:');
         $this->line('   3. Verify the PayPal webhook route in routes/api.php');
-        $this->line('   4. Run migrations: php artisan migrate');
-        $this->line('   5. Review the implementation guide: packageflow-md/0-a_2_commerce_implementation_guide.md');
+
+        if (!$migrationsRun) {
+            $this->line('   4. Run migrations: php artisan migrate');
+            $this->line('   5. Review the implementation guide: packageflow-md/0-a_2_commerce_implementation_guide.md');
+        } else {
+            $this->line('   4. Review the implementation guide: packageflow-md/0-a_2_commerce_implementation_guide.md');
+        }
+
         $this->newLine();
 
         if (!$envTouched) {
