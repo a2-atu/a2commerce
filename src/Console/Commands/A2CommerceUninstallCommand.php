@@ -205,6 +205,10 @@ class A2CommerceUninstallCommand extends Command
                 try {
                     Artisan::call('migrate:rollback', ['--path' => 'database/migrations/' . $file->getFilename(), '--force' => true]);
                     $this->line('   Rolled back migration: ' . $file->getFilename());
+
+                    DB::table('migrations')->where('migration', $file->getFilename())->delete();
+                    // $this->line("   ✅ Removed migration record from migrations table: " . $file->getFilename());
+
                     $rolledBack = true;
                 } catch (\Exception $e) {
                     $this->warn('   Could not rollback migration: ' . $file->getFilename() . ' (' . $e->getMessage() . ')');
