@@ -180,8 +180,30 @@ PHP;
 
     private function pathJoin(string ...$parts): string
     {
-        return collect($parts)
-            ->filter(fn($p) => $p !== '')
+        $filtered = collect($parts)->filter(fn($p) => $p !== '');
+
+        if ($filtered->isEmpty()) {
+            return '';
+        }
+
+        $first = $filtered->first();
+        $isAbsolute = str_starts_with($first, '/') || (PHP_OS_FAMILY === 'Windows' && preg_match('/^[A-Z]:/i', $first));
+
+        // Preserve absolute path prefix
+        if ($isAbsolute) {
+            // For absolute paths, only trim trailing slashes from first part
+            $first = rtrim($first, '/\\');
+            $rest = $filtered->skip(1)
+                ->map(fn($p) => trim($p, '/\\'))
+                ->filter(fn($p) => $p !== '');
+
+            return $rest->isEmpty()
+                ? $first
+                : $first . DIRECTORY_SEPARATOR . $rest->implode(DIRECTORY_SEPARATOR);
+        }
+
+        // For relative paths, trim all slashes from all parts
+        return $filtered
             ->map(fn($p) => trim($p, '/\\'))
             ->implode(DIRECTORY_SEPARATOR);
     }
@@ -357,7 +379,7 @@ PHP;
             if (str_contains($line, '=')) {
                 [$key] = explode('=', $line, 2);
                 $key = trim($key);
-                
+
                 if (array_key_exists($key, self::ENV_KEYS)) {
                     $removedKeys[] = $key;
                     continue; // Skip this line
@@ -369,7 +391,7 @@ PHP;
 
         // Normalize extra blank lines (remove 3+ consecutive newlines)
         $normalized = preg_replace("/[\r\n]{3,}/", "\n\n", implode(PHP_EOL, $remaining));
-        
+
         return rtrim($normalized) . PHP_EOL;
     }
 
@@ -452,4 +474,3 @@ PHP;
         }
     }
 }
-
