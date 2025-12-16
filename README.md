@@ -83,6 +83,7 @@ This will automatically install A2Commerce with all files and configurations:
 - ✅ All Livewire Volt views copied to `resources/views/livewire/front`
 - ✅ PayPal webhook route added to `routes/api.php`
 - ✅ Environment variables added to `.env` and `.env.example`
+- ✅ **Event listeners automatically registered** - No need to manually configure `AppServiceProvider`
 
 **Installation Options:**
 
@@ -186,7 +187,9 @@ A2Commerce uses Laravel events for decoupled functionality:
 - **PaymentCompleted**: Fired when payment is successfully processed
 - **OrderStatusChanged**: Fired when order status updates
 
-Listeners handle stock management, total calculations, notifications, and cleanup automatically.
+**Automatic Listener Registration**: All event listeners are automatically registered when the package is installed. You don't need to manually configure `AppServiceProvider` - the package handles this through `A2CommerceEventServiceProvider`.
+
+Listeners handle stock management, total calculations, notifications, and cleanup automatically. For detailed event flow documentation, see [`packageflow-md/2-a_2_event_flow.md`](packageflow-md/2-a_2_event_flow.md).
 
 ## Commands
 
@@ -346,9 +349,10 @@ A2Commerce includes comprehensive documentation in the `packageflow-md/` directo
 
 - **Event Flow**: `packageflow-md/2-a_2_event_flow.md`
 
-  - Event lifecycle documentation
-  - Listener registration
+  - Complete event lifecycle documentation
+  - Event-to-listener mappings
   - Event payload structures
+  - **Note**: Event listeners are automatically registered - no manual configuration needed
 
 - **Payment Guide**: `packageflow-md/3-a_2_payment_guide.md`
 

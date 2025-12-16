@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.5] - 2025-12-16
+
+### Added
+
+- **Automatic Event Listener Registration**: Event listeners are now automatically registered when the package is installed
+  - Created `A2CommerceEventServiceProvider` to handle all event-to-listener mappings
+  - No manual configuration required in `AppServiceProvider` - package handles registration automatically
+  - Supports all cart, wishlist, comparison, order, and payment events
+  - Fully compatible with Laravel's `php artisan event:cache` command
+  - Clean separation of concerns - event registration is separate from other package functionality
+
+### Changed
+
+- **Service Provider**: Updated `A2CommerceServiceProvider` to automatically register `A2CommerceEventServiceProvider`
+  - Event listeners work immediately after package installation
+  - Users no longer need to manually add event mappings to their `AppServiceProvider`
+
+### Technical
+
+- **EventServiceProvider**: New provider class at `src/Providers/A2CommerceEventServiceProvider.php`
+  - Extends Laravel's `EventServiceProvider`
+  - Defines all event-to-listener mappings for the package
+  - Uses correct namespaces: `App\Events\A2\Commerce\*` and `App\Listeners\A2\Commerce\*`
+
 ## [0.1.4] - 2025-12-16
 
 ### Changed
@@ -109,4 +133,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.1.2]: https://github.com/a2-atu/a2commerce/releases/tag/v0.1.2
 [0.1.3]: https://github.com/a2-atu/a2commerce/releases/tag/v0.1.3
 [0.1.4]: https://github.com/a2-atu/a2commerce/releases/tag/v0.1.4
+[0.1.5]: https://github.com/a2-atu/a2commerce/releases/tag/v0.1.5
 
