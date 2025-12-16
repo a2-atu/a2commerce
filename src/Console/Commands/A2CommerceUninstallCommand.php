@@ -7,6 +7,7 @@ use A2\A2Commerce\Support\Installer;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 
 class A2CommerceUninstallCommand extends Command
 {
@@ -156,10 +157,49 @@ class A2CommerceUninstallCommand extends Command
     }
 
     /**
+     * Remove database tables
+     */
+    private function removeDatabaseTables(): void
+    {
+        try {
+            $prefix = 'a2_ec_';
+
+            // Get all tables with A2Commerce prefix
+            $tables = DB::select("SHOW TABLES LIKE '{$prefix}%'");
+
+            if (empty($tables)) {
+                $this->line('   ℹ️  No A2Commerce tables found.');
+                return;
+            }
+
+            // Disable foreign key checks
+            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+
+            foreach ($tables as $table) {
+                $tableName = array_values((array) $table)[0];
+                DB::statement("DROP TABLE IF EXISTS `{$tableName}`");
+                $this->line("   ✅ Dropped table: {$tableName}");
+            }
+
+            // Re-enable foreign key checks
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+
+            $this->info('   ✅ Database tables removed successfully.');
+        } catch (\Exception $e) {
+            $this->error("   ❌ Error removing database tables: " . $e->getMessage());
+            $this->warn('   ⚠️  You may need to manually remove the tables.');
+        }
+    }
+
+    /**
      * Remove migration files
      */
     private function removeMigrations(): void
     {
+        // Step 1: Drop database tables directly using SQL (most reliable method)
+        $this->removeDatabaseTables();
+
+        // Step 2: Attempt to rollback migrations (for cleanup/verification)
         $migrationPath = database_path('migrations');
         if (!File::isDirectory($migrationPath)) {
             $this->line("   ℹ️  Migrations directory does not exist");
@@ -178,6 +218,7 @@ class A2CommerceUninstallCommand extends Command
                     $this->warn('   Could not rollback migration: ' . $file->getFilename() . ' (' . $e->getMessage() . ')');
                 }
 
+                // Step 3: Delete migration files
                 File::delete($file->getPathname());
                 $this->line("   ✅ Removed migration file: " . $file->getFilename());
                 $removed++;
@@ -189,7 +230,7 @@ class A2CommerceUninstallCommand extends Command
         }
 
         if (! $rolledBack && $removed > 0) {
-            $this->warn('   ⚠️  No migrations were rolled back automatically. You may need to drop A2Commerce tables manually.');
+            $this->line('   ℹ️  Note: Some migrations could not be rolled back, but tables were dropped directly.');
         }
     }
 
