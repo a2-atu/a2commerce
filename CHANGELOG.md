@@ -24,12 +24,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Event listeners work immediately after package installation
   - Users no longer need to manually add event mappings to their `AppServiceProvider`
 
+### Fixed
+
+- **Migration Removal During Uninstall**: Fixed critical bug in uninstallation process where migrations were not properly removed
+  - Implemented direct database table removal using SQL DROP statements for A2Commerce-prefixed tables
+  - Enhanced reliability by dropping tables directly before attempting migration rollback
+  - Improved user feedback with clearer messages regarding migration rollback status
+  - Fixed foreign key constraint handling during table removal
+  - Uninstallation now properly cleans up all database tables and migration files
+- **Foreign Key Constraint**: Fixed migration for `a2_ec_orders` table to properly handle nullable `user_id`
+  - Updated foreign key constraint to allow nullable `user_id` while maintaining cascade delete behavior
+  - Ensures guest checkout functionality works correctly
+
 ### Technical
 
 - **EventServiceProvider**: New provider class at `src/Providers/A2CommerceEventServiceProvider.php`
   - Extends Laravel's `EventServiceProvider`
   - Defines all event-to-listener mappings for the package
   - Uses correct namespaces: `App\Events\A2\Commerce\*` and `App\Listeners\A2\Commerce\*`
+
+### Release Notes
+
+- **Official Release Ready**: This version includes critical bug fixes and is ready for production use
+  - All known issues with uninstallation have been resolved
+  - Migration handling is now reliable and robust
+  - Package is stable and ready for official release
 
 ## [0.1.4] - 2025-12-16
 
