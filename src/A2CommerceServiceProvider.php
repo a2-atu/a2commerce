@@ -7,6 +7,7 @@ use A2\A2Commerce\Console\Commands\A2CommerceHelpCommand;
 use A2\A2Commerce\Console\Commands\A2CommerceInstallCommand;
 use A2\A2Commerce\Console\Commands\A2CommerceUninstallCommand;
 use A2\A2Commerce\Console\Commands\A2CommerceUpdateCommand;
+use A2\A2Commerce\Providers\A2CommerceEventServiceProvider;
 use A2\A2Commerce\Support\Installer;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Filesystem\Filesystem;
@@ -25,6 +26,9 @@ class A2CommerceServiceProvider extends ServiceProvider
                 $app->basePath()
             );
         });
+
+        // Register the EventServiceProvider to automatically register event listeners
+        $this->app->register(A2CommerceEventServiceProvider::class);
     }
 
     public function boot(): void
