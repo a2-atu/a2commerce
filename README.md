@@ -56,26 +56,11 @@ Before installing A2Commerce, ensure you have Laravel and Vormia installed.
 
 ### Step 1: Install Laravel
 
-```sh
-composer create-project laravel/laravel myproject
-cd myproject
-```
-
-### OR Using Laravel Installer
-
-```sh
-laravel new myproject
-cd myproject
-```
+Follow Laravel the [Laravel installation guide](https://github.com/laravel/laravel) to install Laravel:
 
 ### Step 2: Install Vormia
 
 A2Commerce requires Vormia to be installed first. Follow the [Vormia installation guide](https://github.com/vormiaphp/vormia) to install Vormia:
-
-```sh
-composer require vormiaphp/vormia
-php artisan vormia:install
-```
 
 ### Step 3: Install A2Commerce
 
