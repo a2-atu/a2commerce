@@ -26,13 +26,6 @@ class A2CommerceUninstallCommand extends Command
         $this->warn('   This action will:');
         $this->warn('   • Remove all A2Commerce copied files and stubs (only files originally installed by the package)');
         $this->warn('   • Remove PayPal webhook route from routes/api.php');
-        if (!$keepEnv) {
-            $this->warn('   • Remove A2Commerce environment variables from .env and .env.example');
-        } else {
-            $this->warn('   • Keep environment variables (--keep-env flag used)');
-        }
-        $this->warn('   • Remove A2Commerce migrations (a2_ec_*)');
-        $this->warn('   • Note: Database tables are not dropped automatically');
         $this->warn('   • Note: Composer packages are NOT uninstalled');
         $this->newLine();
 
@@ -51,6 +44,30 @@ class A2CommerceUninstallCommand extends Command
             }
         }
 
+        // Ask about migrations
+        $undoMigrations = false;
+        if (!$force) {
+            $this->newLine();
+            $this->error('⚠️  WARNING: Rolling back migrations will DELETE ALL DATA in A2Commerce database tables!');
+            $this->warn('   This includes: orders, products, payments, and all related data.');
+            $undoMigrations = $this->confirm('Do you wish to undo migrations? (This will rollback and delete migration files)', false);
+        } else {
+            // In force mode, default to not rolling back migrations for safety
+            $undoMigrations = false;
+        }
+
+        // Ask about .env variables
+        $removeEnvVars = false;
+        if (!$keepEnv && !$force) {
+            $this->newLine();
+            $removeEnvVars = $this->confirm('Do you wish to remove A2Commerce environment variables from .env and .env.example?', false);
+        } elseif ($keepEnv) {
+            $removeEnvVars = false;
+        } else {
+            // In force mode without --keep-env, default to removing env vars
+            $removeEnvVars = true;
+        }
+
         // Step 1: Create backup of existing A2Commerce-related files
         $this->step('Creating final backup...');
         $this->createFinalBackup();
@@ -58,7 +75,7 @@ class A2CommerceUninstallCommand extends Command
         // Step 2: Let the Installer remove only files that were installed from stubs
         // This ensures we only touch A2/Commerce files and never wipe other A2 namespaces (e.g., A2/Sacco).
         $this->step('Removing A2Commerce files and stubs (file-by-file)...');
-        $touchEnv = ! $keepEnv;
+        $touchEnv = $removeEnvVars;
         $results = $installer->uninstall($touchEnv);
 
         $removedFiles = $results['removed'] ?? [];
@@ -76,10 +93,10 @@ class A2CommerceUninstallCommand extends Command
 
         // Step 3: Environment variables
         $this->step('Cleaning up environment files...');
-        if ($keepEnv) {
-            $this->line('   ⏭️  Environment keys preserved (--keep-env flag used).');
-        } else {
+        if ($removeEnvVars) {
             $this->handleEnvResults($results['env'] ?? []);
+        } else {
+            $this->line('   ⏭️  Environment keys preserved (skipped by user choice).');
         }
 
         // Step 4: Routes
@@ -87,14 +104,20 @@ class A2CommerceUninstallCommand extends Command
         $this->handleRoutes($results['routes'] ?? []);
 
         // Step 5: Remove migrations for A2Commerce
-        $this->step('Removing A2Commerce migrations...');
-        $this->removeMigrations();
+        if ($undoMigrations) {
+            $this->step('Rolling back and removing A2Commerce migrations...');
+            $this->removeMigrations();
+        } else {
+            $this->step('Skipping migration rollback...');
+            $this->line('   ⏭️  Migrations preserved (skipped by user choice).');
+            $this->line('   ⚠️  Note: Migration files and database tables remain. You may need to drop tables manually.');
+        }
 
         // Step 6: Clear caches
         $this->step('Clearing application caches...');
         $this->clearCaches();
 
-        $this->displayCompletionMessage($keepEnv);
+        $this->displayCompletionMessage($removeEnvVars, $undoMigrations);
 
         return self::SUCCESS;
     }
@@ -305,7 +328,7 @@ class A2CommerceUninstallCommand extends Command
     /**
      * Display completion message
      */
-    private function displayCompletionMessage(bool $keepEnv): void
+    private function displayCompletionMessage(bool $envRemoved, bool $migrationsUndone): void
     {
         $this->newLine();
         $this->info('🎉 A2Commerce package uninstalled successfully!');
@@ -314,12 +337,16 @@ class A2CommerceUninstallCommand extends Command
         $this->comment('📋 What was removed:');
         $this->line('   ✅ All A2Commerce copied files and stubs');
         $this->line('   ✅ PayPal webhook route from routes/api.php');
-        if (!$keepEnv) {
+        if ($envRemoved) {
             $this->line('   ✅ A2Commerce environment variables');
         } else {
-            $this->line('   ⚠️  Environment variables preserved (--keep-env)');
+            $this->line('   ⏭️  Environment variables preserved (skipped by user choice)');
         }
-        $this->line('   ✅ A2Commerce migration files (a2_ec_*)');
+        if ($migrationsUndone) {
+            $this->line('   ✅ A2Commerce migrations rolled back and migration files deleted');
+        } else {
+            $this->line('   ⏭️  Migrations preserved (skipped by user choice)');
+        }
         $this->line('   ✅ Application caches cleared');
         $this->line('   ✅ Final backup created in storage/app/');
         $this->newLine();
@@ -327,12 +354,21 @@ class A2CommerceUninstallCommand extends Command
         $this->comment('📖 Final steps:');
         $this->line('   1. Remove "a2-atu/a2commerce" from your composer.json');
         $this->line('   2. Run: composer remove a2-atu/a2commerce');
-        $this->line('   3. Manually remove database tables if needed (migrations are not rolled back)');
-        $this->line('   4. Review your application for any remaining A2Commerce references');
+        if (!$migrationsUndone) {
+            $this->line('   3. Manually remove database tables if needed (migrations were not rolled back)');
+            $this->line('   4. Review your application for any remaining A2Commerce references');
+        } else {
+            $this->line('   3. Review your application for any remaining A2Commerce references');
+        }
         $this->newLine();
 
-        if ($keepEnv) {
+        if (!$envRemoved) {
             $this->warn('⚠️  Note: Environment variables were preserved. Remove them manually if needed.');
+            $this->newLine();
+        }
+
+        if (!$migrationsUndone) {
+            $this->warn('⚠️  Note: Migration files and database tables remain. Remove them manually if needed.');
             $this->newLine();
         }
 
