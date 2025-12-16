@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('a2_ec_orders', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->nullable()->onDelete('cascade');
+            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('cascade');
 
             $table->string('order_number', 100)->unique();
             $table->enum('status', ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded']);
