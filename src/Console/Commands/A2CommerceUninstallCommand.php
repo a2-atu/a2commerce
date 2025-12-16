@@ -3,11 +3,12 @@
 namespace A2\A2Commerce\Console\Commands;
 
 use A2\A2Commerce\A2Commerce;
-use A2\A2Commerce\Support\Installer;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use A2\A2Commerce\Support\Installer;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\DB;
 
 class A2CommerceUninstallCommand extends Command
 {
@@ -213,6 +214,10 @@ class A2CommerceUninstallCommand extends Command
                 } catch (\Exception $e) {
                     $this->warn('   Could not rollback migration: ' . $file->getFilename() . ' (' . $e->getMessage() . ')');
                 }
+
+                DB::table('migrations')->where('migration', $file->getFilename())->delete();
+
+                Log::info("Removed migration record from migrations table: " . $file->getFilename());
 
                 // Step 3: Delete migration files
                 File::delete($file->getPathname());
